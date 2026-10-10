@@ -112,6 +112,61 @@ test('Export cleanup preserves canonical artifacts and live interaction state', 
     }
   });
 
+  await t.test('label backings are transparent across modes, themes and presets and survive native raster export', async () => {
+    // The maintained lifecycle example has no transition text; add one real
+    // authored label here so that mode exercises its label-rendering path.
+    const labeledFiles = { ...files };
+    const lifecycleInput = path.join(scratch, 'labeled-lifecycle.json');
+    labeledFiles.lifecycle = path.join(scratch, 'labeled-lifecycle.html');
+    const lifecycle = JSON.parse(fs.readFileSync(path.join(skillRoot, 'examples', cases.lifecycle), 'utf8'));
+    lifecycle.transitions[0].label = 'Go';
+    fs.writeFileSync(lifecycleInput, JSON.stringify(lifecycle));
+    execFileSync(process.execPath, [path.join(skillRoot, 'renderers/lifecycle/render-lifecycle.mjs'), lifecycleInput, labeledFiles.lifecycle]);
+    for (const [mode, file] of Object.entries(labeledFiles)) {
+      for (const theme of ['dark', 'light']) {
+        await load(file, theme, true);
+        for (const preset of ['classic', 'signal-flow', 'blueprint', 'editorial']) {
+          const paint = await evaluate(`(()=>{
+            const svg=document.querySelector('.diagram-container > svg');
+            document.documentElement.setAttribute('data-preset',${JSON.stringify(preset)});
+            svg.setAttribute('data-preset',${JSON.stringify(preset)});
+            const labels=[...svg.querySelectorAll('.c-mask:has(+ text)')];
+            const nodes=[...svg.querySelectorAll('[data-node-id] > .c-mask')];
+            return {labels:labels.length,transparent:labels.every(r=>getComputedStyle(r).fill==='none'),
+              nodes:nodes.length,opaque:nodes.every(r=>getComputedStyle(r).fill!=='none'&&getComputedStyle(r).fillOpacity==='1')};
+          })()`);
+          assert.ok(paint.labels > 0, `${mode} has label rectangles`);
+          assert.equal(paint.transparent, true, `${mode} ${theme} ${preset}`);
+          assert.ok(paint.nodes > 0);
+          assert.equal(paint.opaque, true, `${mode} node backing stays intact`);
+        }
+        // A controlled underlay at the label's top-left corner must remain
+        // visible even when the label and its rectangle become oversized.
+        await evaluate(`(()=>{
+          const svg=document.querySelector('.diagram-container > svg');
+          const mask=svg.querySelector('g[data-detail] > .c-mask');
+          const rect=document.createElementNS(svg.namespaceURI,'rect');
+          rect.setAttribute('x',mask.getAttribute('x'));rect.setAttribute('y',mask.getAttribute('y'));
+          rect.setAttribute('width','220');rect.setAttribute('height','80');rect.setAttribute('fill','#ff00ff');
+          mask.parentNode.insertBefore(rect,mask);mask.setAttribute('width','220');mask.setAttribute('height','80');
+          mask.nextElementSibling.setAttribute('font-size','32');
+          window.labelSample={x:Number(mask.getAttribute('x'))+5,y:Number(mask.getAttribute('y'))+3};
+        })()`);
+        const text = await exported(`${mode}-${theme}-transparent-label`);
+        const pixel = await evaluate(`(async()=>{
+          const blob=new Blob([${JSON.stringify(text)}],{type:'image/svg+xml'}),url=URL.createObjectURL(blob);
+          const img=new Image();img.src=url;await img.decode();
+          const root=new DOMParser().parseFromString(${JSON.stringify(text)},'image/svg+xml').documentElement;
+          const vb=root.getAttribute('viewBox').split(/\\s+/).map(Number);
+          const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;
+          const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);URL.revokeObjectURL(url);
+          return [...ctx.getImageData(Math.floor(labelSample.x-vb[0]),Math.floor(labelSample.y-vb[1]),1,1).data];
+        })()`, true);
+        assert.deepEqual(pixel, [255, 0, 255, 255], `${mode} ${theme}: enlarged label must not cover the underlay`);
+      }
+    }
+  });
+
   await t.test('explicit light and dark SVG exports stay fixed under the opposite OS theme', async () => {
     const cases = [
       { authorTheme: 'dark', hostTheme: 'dark', format: 'svg-light', theme: 'light', background: 'rgb(244, 245, 247)' },

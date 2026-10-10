@@ -122,6 +122,7 @@
             "minItems": 1,
             "items": { "$ref": "common.schema.json#/$defs/id" }
           },
+          "labelOffset": { "$ref": "common.schema.json#/$defs/point", "description": "Title offset [dx, dy] from its automatic position; moves only the title, not the boundary frame." },
           "pad": { "type": "number", "minimum": 0 }
         }
       }

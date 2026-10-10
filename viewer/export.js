@@ -1,14 +1,14 @@
     /* ============================================================
        Export — Share Card / PNG / JPEG / WebP / SVG / WebM and clipboard
 
-       Raster exports are always rendered at 4x source resolution for
+       Raster exports default to 4x source resolution for
        maximum sharpness. The trick: we set the serialized SVG's
        `width`/`height` to viewBox * 4 so the browser rasterizes the
        vectors at that resolution natively. drawImage then draws at
        the image's natural size (no upscaling = no blur).
 
-       JPEG/WebP paint the current theme's background explicitly since
-       those formats have no alpha channel.
+       JPEG always paints the current theme's background. PNG/WebP can
+       preserve alpha; transparent WebM stores a separate VP8 alpha plane.
        ============================================================ */
     (function () {
       var RASTER_SCALE = 4;
@@ -406,10 +406,16 @@
         }
 
         // Figures draw the diagram on a painted canvas card, like the Viewer.
-        if (opts.figure) bgRect.setAttribute('fill', 'none');
+        if (opts.figure || opts.transparentBackground) bgRect.setAttribute('fill', 'none');
+        if (opts.transparentBackground) {
+          clone.style.setProperty('background', 'none', 'important');
+          if (opts.omitGrid) Array.prototype.forEach.call(clone.querySelectorAll('rect[fill="url(#grid)"]'), function (rect) { rect.remove(); });
+        }
 
         clone.insertBefore(style, clone.firstChild);
-        clone.insertBefore(bgRect, style.nextSibling);
+        // Auto-theme CSS paints .c-bg-rect even when its fill attribute is none.
+        // Omit the background element entirely for transparent exports.
+        if (!opts.transparentBackground) clone.insertBefore(bgRect, style.nextSibling);
 
         // The XML declaration pins UTF-8: without it, consumers that guess an
         // encoding instead of defaulting to UTF-8 mangle non-ASCII text.
@@ -448,6 +454,19 @@
           if (vbW * s * vbH * s <= MAX_CANVAS_PIXELS) return s;
         }
         return Math.sqrt(MAX_CANVAS_PIXELS / (vbW * vbH)) * 0.999;
+      }
+
+      function exportScale(options, fallback, width, height) {
+        if (!options || options.scale == null || options.scale === 'auto') return fallback;
+        var scale = Number(options.scale);
+        if ([1, 2, 3, 4].indexOf(scale) === -1) {
+          var invalid = exportError('viewer.export.error.scale'); invalid.archifyExportSize = true; throw invalid;
+        }
+        if (Math.ceil(width * scale) * Math.ceil(height * scale) > MAX_CANVAS_PIXELS ||
+            width * scale > 8192 || height * scale > 8192) {
+          var oversized = exportError('viewer.export.error.scaleTooLarge'); oversized.archifyExportSize = true; throw oversized;
+        }
+        return scale;
       }
 
       // Raster exports reproduce the Viewer page without its controls: the
@@ -491,10 +510,12 @@
         };
       }
 
-      function paintFigure(ctx, layout) {
+      function paintFigure(ctx, layout, transparentBackground) {
         var m = FIGURE_MARGIN;
-        ctx.fillStyle = layout.bg;
-        ctx.fillRect(0, 0, layout.width, layout.height);
+        if (!transparentBackground) {
+          ctx.fillStyle = layout.bg;
+          ctx.fillRect(0, 0, layout.width, layout.height);
+        }
         if (layout.title) {
           var titleMid = m + 16;
           ctx.fillStyle = layout.accent;
@@ -512,6 +533,7 @@
           ctx.textBaseline = 'alphabetic';
         }
         var x = m, y = m + layout.header, w = layout.cardWidth, h = layout.cardHeight, r = 16;
+        if (transparentBackground) return { x: x + FIGURE_CARD_PADDING, y: y + FIGURE_CARD_PADDING };
         function cardPath() {
           ctx.beginPath();
           if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, r);
@@ -549,7 +571,8 @@
         return { x: x + FIGURE_CARD_PADDING, y: y + FIGURE_CARD_PADDING };
       }
 
-      function rasterize(format) {
+      function rasterize(format, options) {
+        var transparentBackground = format !== 'jpeg' && options && options.transparentBackground === true;
         // Serialize at a safe scale (RASTER_SCALE=4 by default, reduced if the
         // resulting canvas would exceed MAX_CANVAS_PIXELS). The SVG itself is
         // rasterized at target resolution natively; drawImage draws at natural
@@ -557,8 +580,10 @@
         var svg = document.querySelector('.diagram-container svg');
         var vb = svg.viewBox.baseVal;
         var layout = figureLayout(vb);
-        var scale = pickSafeScale(layout.width, layout.height);
-        var data = serializeSvg(scale, { figure: true });
+        var scale;
+        try { scale = exportScale(options, pickSafeScale(layout.width, layout.height), layout.width, layout.height); }
+        catch (error) { return Promise.reject(error); }
+        var data = serializeSvg(scale, { figure: true, transparentBackground: transparentBackground });
         var svgBlob = new Blob([data.svgString], { type: 'image/svg+xml;charset=utf-8' });
         var svgUrl = URL.createObjectURL(svgBlob);
 
@@ -573,7 +598,7 @@
               // Paint in CSS pixels; the SVG image is already rendered at scale,
               // so drawing it at CSS size under this transform stays 1:1.
               ctx.setTransform(scale, 0, 0, scale, 0, 0);
-              var origin = paintFigure(ctx, layout);
+              var origin = paintFigure(ctx, layout, transparentBackground);
               ctx.drawImage(img, origin.x, origin.y, vb.width, vb.height);
               ctx.setTransform(1, 0, 0, 1, 0, 0);
               URL.revokeObjectURL(svgUrl);
@@ -783,23 +808,243 @@
           typeof HTMLCanvasElement.prototype.captureStream === 'function');
       }
 
+      function canEncodeAlphaWebm() {
+        return typeof VideoEncoder !== 'undefined' && typeof VideoFrame !== 'undefined';
+      }
+
+      function canEncodeGif() {
+        var svg = document.querySelector('.diagram-container svg');
+        return !!(svg && svg.querySelector('[data-edge-id]') && typeof HTMLCanvasElement !== 'undefined');
+      }
+
+      // GIF89a: global adaptive palette, LZW, loop extension and full-frame
+      // restore-to-background disposal. Transparency is binary, as defined by
+      // https://giflib.sourceforge.net/gifstandard/GIF89a.html.
+      async function encodeGif(canvas, paint, duration, fps, transparent) {
+        var ctx = canvas2dOrThrow(canvas, 'gif');
+        var histogram = new Map();
+        for (var sample = 0; sample < 8; sample++) {
+          paint(sample * duration / 8000);
+          var pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+          var stride = Math.max(1, Math.floor(canvas.width * canvas.height / 60000));
+          for (var p = 0; p < pixels.length; p += stride * 4) {
+            if (pixels[p + 3] < 128) continue;
+            var key = (pixels[p] >> 3) * 1024 + (pixels[p + 1] >> 3) * 32 + (pixels[p + 2] >> 3);
+            var cell = histogram.get(key);
+            if (!cell) { cell = [0, 0, 0, 0]; histogram.set(key, cell); }
+            cell[0] += pixels[p]; cell[1] += pixels[p + 1]; cell[2] += pixels[p + 2]; cell[3]++;
+          }
+        }
+        var colors = Array.from(histogram.values()).map(function (c) {
+          return [c[0] / c[3], c[1] / c[3], c[2] / c[3], c[3]];
+        });
+        if (!colors.length) colors.push([0, 0, 0, 1]);
+        function box(entries) {
+          var ranges = [0, 1, 2].map(function (axis) {
+            var min = 255, max = 0;
+            entries.forEach(function (c) { min = Math.min(min, c[axis]); max = Math.max(max, c[axis]); });
+            return max - min;
+          });
+          var axis = ranges.indexOf(Math.max.apply(null, ranges));
+          return { entries: entries, axis: axis, score: entries.length > 1 ? ranges[axis] * Math.sqrt(entries.reduce(function (n, c) { return n + c[3]; }, 0)) : 0 };
+        }
+        var boxes = [box(colors)];
+        while (boxes.length < 255) {
+          boxes.sort(function (a, b) { return b.score - a.score; });
+          var split = boxes[0];
+          if (!split.score) break;
+          split.entries.sort(function (a, b) { return a[split.axis] - b[split.axis]; });
+          var half = split.entries.reduce(function (n, c) { return n + c[3]; }, 0) / 2;
+          var weight = 0, at = 0;
+          while (at < split.entries.length - 1 && weight < half) weight += split.entries[at++][3];
+          at = Math.max(1, at);
+          boxes.splice(0, 1, box(split.entries.slice(0, at)), box(split.entries.slice(at)));
+        }
+        var palette = new Uint8Array(768);
+        boxes.forEach(function (b, i) {
+          var sum = [0, 0, 0, 0];
+          b.entries.forEach(function (c) { for (var axis = 0; axis < 3; axis++) sum[axis] += c[axis] * c[3]; sum[3] += c[3]; });
+          for (var axis = 0; axis < 3; axis++) palette[(i + 1) * 3 + axis] = Math.round(sum[axis] / sum[3]);
+        });
+        var lookup = new Uint8Array(32768);
+        for (var key = 0; key < lookup.length; key++) {
+          var r = (key >> 10) * 8 + 4, g = ((key >> 5) & 31) * 8 + 4, b = (key & 31) * 8 + 4;
+          var nearest = 1, distance = Infinity;
+          for (var c = 1; c <= boxes.length; c++) {
+            var dr = r - palette[c * 3], dg = g - palette[c * 3 + 1], db = b - palette[c * 3 + 2];
+            var d = dr * dr + dg * dg + db * db;
+            if (d < distance) { distance = d; nearest = c; }
+          }
+          lookup[key] = nearest;
+        }
+        function word(n) { return [n & 255, (n >> 8) & 255]; }
+        function lzw(indices) {
+          var out = [], bits = 0, buffer = 0, width = 9, next = 258, dictionary = new Map();
+          function emit(code) {
+            buffer |= code << bits; bits += width;
+            while (bits >= 8) { out.push(buffer & 255); buffer >>>= 8; bits -= 8; }
+          }
+          emit(256);
+          var prefix = indices[0];
+          for (var i = 1; i < indices.length; i++) {
+            var pair = prefix * 256 + indices[i], found = dictionary.get(pair);
+            if (found !== undefined) { prefix = found; continue; }
+            emit(prefix);
+            if (next < 4096) {
+              dictionary.set(pair, next++);
+              if (next > (1 << width) && width < 12) width++;
+            } else { emit(256); dictionary.clear(); width = 9; next = 258; }
+            prefix = indices[i];
+          }
+          emit(prefix); emit(257);
+          if (bits) out.push(buffer & 255);
+          var data = [8];
+          for (var i = 0; i < out.length; i += 255) {
+            data.push(Math.min(255, out.length - i));
+            for (var j = i; j < Math.min(i + 255, out.length); j++) data.push(out[j]);
+          }
+          data.push(0); return new Uint8Array(data);
+        }
+        var parts = ['GIF89a', new Uint8Array(word(canvas.width).concat(word(canvas.height), [247, 0, 0])), palette,
+          new Uint8Array([33, 255, 11]), 'NETSCAPE2.0', new Uint8Array([3, 1, 0, 0, 0])];
+        var count = Math.max(2, Math.round(duration * fps / 1000));
+        var indices = new Uint8Array(canvas.width * canvas.height);
+        for (var frame = 0; frame < count; frame++) {
+          paint(frame * duration / count / 1000);
+          var pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+          for (var i = 0; i < indices.length; i++) {
+            var p = i * 4;
+            indices[i] = transparent && pixels[p + 3] < 128 ? 0 : lookup[(pixels[p] >> 3) * 1024 + (pixels[p + 1] >> 3) * 32 + (pixels[p + 2] >> 3)];
+          }
+          var delay = Math.max(1, Math.round((frame + 1) * duration / count / 10) - Math.round(frame * duration / count / 10));
+          parts.push(new Uint8Array([33, 249, 4, 8 | (transparent ? 1 : 0)].concat(word(delay), [0, 0])));
+          parts.push(new Uint8Array([44, 0, 0, 0, 0].concat(word(canvas.width), word(canvas.height), [0])));
+          parts.push(lzw(indices));
+          // Yield between frames so the export page continues to respond.
+          await new Promise(function (resolve) { setTimeout(resolve, 0); });
+        }
+        parts.push(new Uint8Array([59]));
+        return new Blob(parts, { type: 'image/gif' });
+      }
+
+      // WebM alpha uses a second VP8 bitstream in BlockAdditional (ID 1).
+      // https://wiki.webmproject.org/alpha-channel
+      // Encode the alpha plane directly as I420 Y values: RGB-to-YUV conversion
+      // of a grayscale mask would restrict alpha to the video luma range.
+      async function encodeAlphaWebm(canvas, draw, duration, fps) {
+        var width = canvas.width, height = canvas.height;
+        var config = { codec: 'vp8', width: width, height: height, framerate: fps,
+          bitrate: 8000000, alpha: 'discard', hardwareAcceleration: 'prefer-software' };
+        var supported = await VideoEncoder.isConfigSupported(config);
+        if (!supported.supported || duration > 60000 || fps > 60) throw exportError('viewer.export.error.webmRequirements');
+        var failure = null;
+        var colors = [], alphas = [];
+        function encoder(output) {
+          return new VideoEncoder({ output: function (chunk) {
+            var bytes = new Uint8Array(chunk.byteLength);
+            chunk.copyTo(bytes);
+            output.push(bytes);
+          }, error: function (error) { failure = error; } });
+        }
+        var colorEncoder = encoder(colors), alphaEncoder = null;
+        var blocks = [];
+        function concat(parts) {
+          var size = parts.reduce(function (n, p) { return n + p.length; }, 0);
+          var bytes = new Uint8Array(size), offset = 0;
+          parts.forEach(function (p) { bytes.set(p, offset); offset += p.length; });
+          return bytes;
+        }
+        function uint(value) {
+          var bytes = [];
+          do { bytes.unshift(value % 256); value = Math.floor(value / 256); } while (value);
+          return new Uint8Array(bytes);
+        }
+        function element(id, payload) {
+          var length = payload.length, count = 1;
+          while (length >= Math.pow(2, count * 7) - 1) count++;
+          var size = new Uint8Array(count);
+          for (var i = count - 1; i >= 0; i--) { size[i] = length % 256; length = Math.floor(length / 256); }
+          size[0] |= 1 << (8 - count);
+          return concat([uint(id), size, payload]);
+        }
+        function number(id, value) { return element(id, uint(value)); }
+        function textElement(id, value) { return element(id, new TextEncoder().encode(value)); }
+        function group(id, children) { return element(id, concat(children)); }
+        try {
+          alphaEncoder = encoder(alphas);
+          colorEncoder.configure(config);
+          alphaEncoder.configure(config);
+          var frames = Math.ceil(duration * fps / 1000);
+          var ctx = canvas2dOrThrow(canvas, 'webm');
+          for (var index = 0; index < frames; index++) {
+            draw(index / fps);
+            var rgba = ctx.getImageData(0, 0, width, height).data;
+            var plane = new Uint8Array(width * height * 3 / 2);
+            plane.fill(128, width * height);
+            for (var pixel = 0; pixel < width * height; pixel++) {
+              plane[pixel] = rgba[pixel * 4 + 3];
+              rgba[pixel * 4 + 3] = 255;
+            }
+            var timestamp = Math.round(index * 1000000 / fps);
+            var colorFrame = new VideoFrame(rgba, { format: 'RGBA', codedWidth: width, codedHeight: height, timestamp: timestamp });
+            var alphaFrame = null;
+            try {
+              alphaFrame = new VideoFrame(plane, { format: 'I420', codedWidth: width, codedHeight: height, timestamp: timestamp });
+              colorEncoder.encode(colorFrame, { keyFrame: true });
+              alphaEncoder.encode(alphaFrame, { keyFrame: true });
+            } finally { colorFrame.close(); if (alphaFrame) alphaFrame.close(); }
+            await Promise.all([colorEncoder.flush(), alphaEncoder.flush()]);
+            if (failure) throw failure;
+            if (colors.length !== 1 || alphas.length !== 1) throw exportError('viewer.export.error.emptyWebm');
+            // Each cluster starts at a keyframe, avoiding signed block-time limits.
+            blocks.push(group(0x1F43B675, [number(0xE7, Math.round(index * 1000 / fps)),
+              group(0xA0, [element(0xA1, concat([new Uint8Array([0x81, 0, 0, 0]), colors.pop()])),
+                number(0x9B, Math.round(Math.min(1000 / fps, duration - index * 1000 / fps))),
+                group(0x75A1, [group(0xA6, [number(0xEE, 1), element(0xA5, alphas.pop())])])]) ]));
+          }
+        } finally {
+          if (colorEncoder.state !== 'closed') colorEncoder.close();
+          if (alphaEncoder && alphaEncoder.state !== 'closed') alphaEncoder.close();
+        }
+        var float = new Uint8Array(8);
+        new DataView(float.buffer).setFloat64(0, duration);
+        var info = group(0x1549A966, [number(0x2AD7B1, 1000000), element(0x4489, float),
+          textElement(0x4D80, 'Archify'), textElement(0x5741, 'Archify')]);
+        var tracks = group(0x1654AE6B, [group(0xAE, [number(0xD7, 1), number(0x73C5, 1), number(0x83, 1),
+          textElement(0x86, 'V_VP8'), number(0x23E383, Math.round(1000000000 / fps)),
+          group(0xE0, [number(0xB0, width), number(0xBA, height), number(0x53C0, 1)])])]);
+        var position = info.length + tracks.length;
+        var cues = blocks.map(function (block, i) {
+          var cue = group(0xBB, [number(0xB3, Math.round(i * 1000 / fps)),
+            group(0xB7, [number(0xF7, 1), number(0xF1, position)])]);
+          position += block.length;
+          return cue;
+        });
+        var header = group(0x1A45DFA3, [number(0x4286, 1), number(0x42F7, 1), number(0x42F2, 4), number(0x42F3, 8),
+          textElement(0x4282, 'webm'), number(0x4287, 4), number(0x4285, 2)]);
+        return new Blob([header, group(0x18538067, [info, tracks].concat(blocks, [group(0x1C53BB6B, cues)]))], { type: 'video/webm' });
+      }
+
       // Record the live CSS animation without Puppeteer, ffmpeg, or a network
       // dependency. SVG files loaded through Image are commonly rasterized as
       // one cached bitmap, so repeatedly drawing that Image does not reliably
       // advance its CSS animation. Keep one crisp static SVG background, then
       // render an explicit time-varying signal scene over the real authored
       // relationship geometry on every captured canvas frame.
-      function recordWebm(options) {
+      function recordMotion(options, format) {
         options = options || {};
-        if (!canRecordMotion()) {
-          return Promise.reject(exportError('viewer.export.error.webmRequirements'));
+        if (format === 'gif' ? !canEncodeGif() : options.transparentBackground ? !canEncodeAlphaWebm() : !canRecordMotion()) {
+          return Promise.reject(exportError(format === 'gif' ? 'viewer.export.error.gifRequirements' : 'viewer.export.error.webmRequirements'));
         }
         var duration = Math.max(250, Number(options.duration) || MOTION_DURATION);
-        var fps = Math.max(1, Number(options.fps) || MOTION_FPS);
+        var fps = Math.max(1, Number(options.fps) || (format === 'gif' ? 12 : MOTION_FPS));
+        if (format === 'gif') { duration = Math.min(30000, duration); fps = Math.min(24, fps); }
         var svg = document.querySelector('.diagram-container svg');
         var vb = svg.viewBox.baseVal;
-        var scale = Math.min(1, 1280 / vb.width);
-        var data = serializeSvg(scale);
+        var scale;
+        try { scale = exportScale(options, Math.min(1, 1280 / vb.width), vb.width, vb.height); }
+        catch (error) { return Promise.reject(error); }
+        var data = serializeSvg(scale, { transparentBackground: options.transparentBackground === true });
         var sourceUrl = URL.createObjectURL(new Blob([data.svgString], { type: 'image/svg+xml;charset=utf-8' }));
 
         function createMotionScene(root) {
@@ -836,7 +1081,7 @@
             return Number.isFinite(value) ? value : fallback;
           }
 
-          var edges = Array.prototype.slice.call(root.querySelectorAll('[data-animate="edge"]')).map(function (element, index) {
+          var edges = Array.prototype.slice.call(root.querySelectorAll(format === 'gif' ? '[data-edge-id]' : '[data-animate="edge"]')).map(function (element, index) {
             var computed = getComputedStyle(element);
             return {
               points: samplesFor(element),
@@ -846,7 +1091,7 @@
             };
           }).filter(function (edge) { return edge.points.length > 1; });
 
-          var nodes = Array.prototype.slice.call(root.querySelectorAll('[data-node-id][data-animate="node"]')).map(function (element, index) {
+          var nodes = Array.prototype.slice.call(root.querySelectorAll(format === 'gif' ? '[data-node-id]' : '[data-node-id][data-animate="node"]')).map(function (element, index) {
             var box;
             try { box = element.getBBox(); } catch (_) { return null; }
             var painted = element.querySelector('[class*="c-"]') || element;
@@ -955,9 +1200,21 @@
           var backgroundImage = new Image();
           backgroundImage.onload = function () {
             var canvas = document.createElement('canvas');
-            canvas.width = Math.max(2, Math.round(data.width / 2) * 2);
-            canvas.height = Math.max(2, Math.round(data.height / 2) * 2);
+            canvas.width = Math.max(2, format === 'gif' ? Math.round(data.width) : Math.round(data.width / 2) * 2);
+            canvas.height = Math.max(2, format === 'gif' ? Math.round(data.height) : Math.round(data.height / 2) * 2);
             var ctx = canvas.getContext('2d');
+            if (format === 'gif') {
+              encodeGif(canvas, function (seconds) {
+                drawMotionFrame(ctx, backgroundImage, motionScene, seconds);
+              }, duration, fps, options.transparentBackground === true).then(resolve, reject).finally(function () { URL.revokeObjectURL(sourceUrl); });
+              return;
+            }
+            if (options.transparentBackground) {
+              encodeAlphaWebm(canvas, function (seconds) {
+                drawMotionFrame(ctx, backgroundImage, motionScene, seconds);
+              }, duration, fps).then(resolve, reject).finally(function () { URL.revokeObjectURL(sourceUrl); });
+              return;
+            }
             var stream = canvas.captureStream(fps);
             var mime = motionMimeType();
             var recorder;
@@ -1022,12 +1279,20 @@
         });
       }
 
+      function recordWebm(options) { return recordMotion(options, 'webm'); }
+      function recordGif(options) { return recordMotion(options, 'gif'); }
+
       var menu = document.getElementById('export-menu');
       var btn = document.getElementById('btn-export');
       var routeShareItem = menu.querySelector('button[data-action="route-share-card"]');
       var reachShareItem = menu.querySelector('button[data-action="reach-share-card"]');
+      var backgroundItem = menu.querySelector('[data-action="transparent-background"]');
+      var scaleItem = document.getElementById('export-scale');
+      function backgroundOptions() {
+        return { transparentBackground: backgroundItem.getAttribute('aria-checked') === 'true', scale: scaleItem.value };
+      }
       var items = function () {
-        return Array.prototype.slice.call(menu.querySelectorAll('button[role="menuitem"]'));
+        return Array.prototype.slice.call(menu.querySelectorAll('button[role^="menuitem"], select'));
       };
 
       function syncRouteShareItem() {
@@ -1061,6 +1326,7 @@
       function supports(format) {
         if (format === 'svg' || format === 'svg-light' || format === 'svg-dark' || format === 'png') return true;
         if (format === 'webm') return canRecordMotion();
+        if (format === 'gif') return canEncodeGif();
         var mime = format === 'jpeg' ? 'image/jpeg' : 'image/webp';
         try {
           var c = document.createElement('canvas');
@@ -1141,6 +1407,7 @@
       menu.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') { e.preventDefault(); close(true); return; }
         if (e.key === 'Tab')    { close(false); return; }
+        if (e.target === scaleItem) return;
 
         var available = items().filter(function (i) { return !i.hidden && !i.disabled; });
         var current = available.indexOf(document.activeElement);
@@ -1164,8 +1431,9 @@
         }
       });
 
-      function runExport(format) {
-        if (['svg', 'svg-light', 'svg-dark', 'png', 'jpeg', 'webp', 'webm'].indexOf(format) === -1) {
+      function runExport(format, options) {
+        options = Object.assign(backgroundOptions(), options || {});
+        if (['svg', 'svg-light', 'svg-dark', 'png', 'jpeg', 'webp', 'webm', 'gif'].indexOf(format) === -1) {
           return Promise.reject(exportError('viewer.export.unsupported'));
         }
         var base = diagramFilename();
@@ -1175,20 +1443,21 @@
         close(true);
         clearExportReceipt();
         if (format === 'webm') toast(viewerText('viewer.export.recording'));
+        if (format === 'gif') toast(viewerText('viewer.export.encodingGif'));
         return (svgTheme
-          ? Promise.resolve(serializeSvg(1, { theme: svgTheme })).then(function (d) {
+          ? Promise.resolve(serializeSvg(1, { theme: svgTheme, transparentBackground: options.transparentBackground === true, omitGrid: options.transparentBackground === true })).then(function (d) {
               var blob = new Blob([d.svgString], { type: 'image/svg+xml;charset=utf-8' });
               recordExportReceipt('svg', blob, d.canonicalStateClean);
               download(blob, base + (svgTheme === 'auto' ? '' : '-' + svgTheme) + '.svg');
             })
-          : format === 'webm'
-            ? recordWebm().then(function (blob) {
+          : format === 'webm' || format === 'gif'
+            ? (format === 'gif' ? recordGif(options) : recordWebm(options)).then(function (blob) {
                 document.documentElement.setAttribute('data-last-motion-bytes', String(blob.size));
-                recordExportReceipt('webm', blob, true);
-                download(blob, base + '.webm');
-                toast(viewerText('viewer.export.downloadedWebm'));
+                recordExportReceipt(format, blob, true);
+                download(blob, base + '.' + format);
+                toast(viewerText(format === 'gif' ? 'viewer.export.downloadedGif' : 'viewer.export.downloadedWebm'));
               })
-          : rasterize(format).then(function (blob) {
+          : rasterize(format, options).then(function (blob) {
               recordExportReceipt(format, blob, true);
               download(blob, base + '.' + format);
             })
@@ -1198,7 +1467,7 @@
           var message = exportMessage(err);
           document.documentElement.setAttribute('data-last-export-error-format', format);
           document.documentElement.setAttribute('data-last-export-error', technicalMessage);
-          if (format === 'webm') {
+          if (format === 'webm' && !err.archifyExportSize) {
             var motionItem = menu.querySelector('button[data-format="webm"]');
             if (motionItem) {
               motionItem.disabled = true;
@@ -1322,7 +1591,7 @@
           alert(viewerText('viewer.export.clipboardUnsupported.short'));
           return;
         }
-        var blobPromise = rasterize('png');
+        var blobPromise = rasterize('png', backgroundOptions());
         return writePngToClipboard(blobPromise).then(function () {
           toast(viewerText('viewer.export.copiedPng'));
         }).catch(function (err) {
@@ -1334,6 +1603,13 @@
       }
 
       menu.addEventListener('click', function (e) {
+        if (e.target.closest('[data-action="transparent-background"]')) {
+          backgroundItem.setAttribute('aria-checked', backgroundOptions().transparentBackground ? 'false' : 'true');
+          var webmItem = menu.querySelector('[data-format="webm"]');
+          webmItem.disabled = backgroundOptions().transparentBackground ? !canEncodeAlphaWebm() : !canRecordMotion();
+          webmItem.title = webmItem.disabled ? viewerText('viewer.export.motionUnavailable') : '';
+          return;
+        }
         var routeShareCardBtn = e.target.closest('button[data-action="route-share-card"]');
         if (routeShareCardBtn && !routeShareCardBtn.disabled && !routeShareCardBtn.hidden) { runRouteShareCard(); return; }
 
@@ -1347,7 +1623,7 @@
         if (formatBtn && !formatBtn.disabled) { runExport(formatBtn.dataset.format); }
       });
 
-      Archify.motion = { canRecord: canRecordMotion, recordWebm: recordWebm };
+      Archify.motion = { canRecord: canRecordMotion, recordWebm: recordWebm, canEncodeGif: canEncodeGif, recordGif: recordGif };
       Archify.exportMenu = {
         open: open,
         close: close,

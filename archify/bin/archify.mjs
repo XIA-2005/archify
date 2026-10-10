@@ -2175,6 +2175,7 @@ function invalidProvenance(artifactPath, sidecar, reason, evidence = {}) {
 
 function usage() {
   return `Usage:
+  archify draft architecture <semantic.json> <candidate.json> [--repo-root path] --json
   archify render <type> <input.json> [output.html] [--quality standard|showcase] [--repo-root path]
   archify compare architecture <base.json> <head.json> [output.html] [--receipt path] [--json] [--quality standard|showcase] [--repo-root path]
   archify deliver <type> <input.json> [output.html] [--json] [--open] [--quality standard|showcase] [--repo-root path]
@@ -6871,6 +6872,9 @@ try {
     case '--help':
     case 'help':
       console.log(usage());
+      break;
+    case 'draft':
+      (await import('./draft.mjs')).commandDraft(args);
       break;
     case 'render':
       commandRender(args);

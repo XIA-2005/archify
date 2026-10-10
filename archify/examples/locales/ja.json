@@ -128,6 +128,9 @@
   "viewer.export.vectorMotion.heading": "ベクター & モーション",
   "viewer.export.editable": "編集可能なベクター",
   "viewer.export.motion6s": "6秒のモーション",
+  "viewer.export.background": "背景",
+  "viewer.export.transparent": "透明な背景",
+  "viewer.export.transparent.hint": "PNG / WebP / WebM / GIF / SVG · JPEG は不透明な背景を保持",
   "viewer.export.unsupported": "このブラウザではサポートされていません",
   "viewer.export.clipboardUnsupported": "このブラウザはクリップボードへの画像書き込みに対応していません",
   "viewer.export.clipboardUnsupported.short": "このブラウザはクリップボードへの画像書き込みに対応していません。",
@@ -421,5 +424,14 @@
   "viewer.common.copyFailed": "コピーに失敗しました",
   "viewer.common.copyLink": "リンクをコピー",
   "viewer.common.clear": "クリア",
-  "viewer.common.close": "閉じる"
+  "viewer.common.close": "閉じる",
+  "viewer.export.gif.hint": "6 秒ループ · PowerPoint",
+  "viewer.export.encodingGif": "GIF アニメーションを作成中…",
+  "viewer.export.downloadedGif": "GIF をダウンロードしました",
+  "viewer.export.scale": "書き出し倍率",
+  "viewer.export.scale.auto": "既定",
+  "viewer.export.scale.hint": "既定：画像 4×、アニメーション幅 1280px まで。SVG はベクター。",
+  "viewer.export.error.scale": "1× ～ 4× の倍率を選択してください",
+  "viewer.export.error.scaleTooLarge": "書き出しサイズの上限を超えています。低い倍率を選択してください。",
+  "viewer.export.error.gifRequirements": "GIF アニメーションの書き出しには図の接続とブラウザーの Canvas 対応が必要です"
 }

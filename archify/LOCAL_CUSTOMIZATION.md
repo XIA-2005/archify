@@ -1,27 +1,44 @@
-# Archify visual editor customization
+# 本地 Archify 定制恢复记录（2026-10-10）
 
-This fork restores mandatory delivery of a matching **Archify · 可视化编辑器**, the standalone HTML and editable JSON. The user-authorized scope covers the existing architecture editor and a common visual acceptance workflow.
+## 原因
 
-## Behavior
+Codex 加载 `<installed-skill>/archify`。检查时，该目录的 SKILL、默认设计指南、架构渲染器和模板与上游 main 的 `54edef453ca3fc495f488c30de97eaea0c789f19` 相同。
 
-- Architecture: drag nodes; edit text and connections; undo/redo; export current unsaved drafts as PNG, JPEG, WebP or SVG through the canonical renderer.
-- Other diagram modes retain their schema/form editor; they do not have a draggable graph canvas.
-- `editor/deliver.mjs` invokes the original finalize once, captures real screenshots, starts the matching local editor and verifies HTTP availability and the frozen candidate hash.
-- Preview, image export and saving forward the same optional `--repo-root` used for repository evidence.
-- Every Architecture requires actual light/dark image inspection. Automated receipts never establish aesthetic acceptance.
-- Upstream default geometry and routing remain stable. Explicit font/line/arrow controls use expanded geometry and collision checks.
-- Identical JSON renders deterministically. Different authoring models can still choose different structures and coordinates; common design rules and image review control those differences.
+原定制版仍在 `/path/to/archify`，包含强制双交付、视觉验收、拖拽、文字/连线修改、历史记录和字号控制。先前工作明确要求不同步到 Codex 安装目录。这是不同副本未同步；没有证据证明原版渲染器被破坏，也不能证明所有模型生成的不同 JSON 本来都具有相同美观性。
 
-## Delivery
+## 恢复范围
 
-Run from the diagram project directory, replacing `<skill-root>` with the checked-out or installed package directory:
+- 每次生成必须交付独立 HTML、匹配的“Archify · 可视化编辑器”和可编辑 JSON。
+- `editor/deliver.mjs` 统一 finalize、真实截图、编辑器启动和源文件哈希验证；视觉评审仍须查看图片。
+- 恢复架构节点拖拽、文字/连线编辑、撤销/重做；新增当前未保存草稿的 PNG/JPEG/WebP/SVG 导出入口。
+- 编辑预览、图像导出和保存使用相同 `--repo-root`。
+- 保持上游默认布局、配色、路由及默认标签几何。新增字号/线宽/箭头控制只在显式设置时启用扩展几何与箭头避让；保留箭头顶点裁切修复。
+- 每个 Architecture 都须实际查看亮/暗截图，不能用自动回执代替美观验收。相同 JSON 的渲染确定；不同模型仍可能产生不同结构和坐标，靠统一设计与验收约束质量。
 
-```text
-node <skill-root>/editor/deliver.mjs architecture <candidate.json> <diagram.html> --quality showcase --json
-```
+## 更新与恢复
 
-The editor listens only on localhost. Its private URL is available while the local Node process runs. Do not publish editor access tokens or private project diagrams.
+`customization-manifest.json` 列出定制文件和 SHA-256。更新上游时先备份并比较这些文件，不得仅复制上游 SKILL 而遗漏编辑器或强制规则。未经用户授权不得更新任何 live 安装。
 
-See [editor documentation](editor/README.md) and [visual acceptance](references/visual-acceptance.md). Keep these customizations and their file manifest when updating from upstream. Publishing this fork does not authorize changes to live installations.
+原始安装、被替换的源文件和检查证据保存在仓库 `.archify/repair-20261010/`。本次恢复包独立于官方 `archify.zip`，官方发布包未被冒充为本地定制版。
 
-The upstream MIT license, attribution and third-party notices are retained. This is a customized fork of upstream v3.0.1, not an official upstream release.
+编辑器绑定 localhost，地址只在后台 Node 进程存活时可用。非 Architecture 模式保留表单/JSON 编辑器，目前没有图形拖拽画布。
+
+## 当前定制版（2026-10-11）
+
+- PNG/WebP、WebM、GIF、SVG 自动/浅色/深色导出可选透明背景；JPEG 保持不透明。SVG 保留矢量，透明导出移除画布底色与网格，节点填充保留。
+- 导出提供默认、1×、2×、3×、4× 放大倍率；GIF 为循环动图，可用于 PPT；图片和动图按目标分辨率重绘。
+- 连线标签与分组标题背景透明；编辑器可点击修改连线文字和字号，保留路由和连接关系以及原有连线遮罩。
+- 可视化编辑器可切换浅色/深色；批量字号的八类选项支持悬停与键盘焦点高亮预览。
+- 标题、副标题、图例标题与输出校验标准默认收进折叠区。输出校验标准不控制导出分辨率。
+- 包含 Architecture draft 入口及分组标题独立偏移支持；原有正式验证、视觉验收、HTML/JSON/本地编辑器双交付要求保留。
+
+本分支的 `archify/` 目录是当前定制 Skill 源码。根目录 `archify.zip` 仍是官方包，不包含本次定制；本次没有发布 Release、版本标签或替换官方 ZIP，也没有更新其他 live 安装。生成的 Viewer 模板、示例和图库已更新。安装或同步应明确选择此分支，避免误用仓库默认 main 或官方 ZIP。
+
+### 上传前验证
+
+- `node scripts/generate-viewer.mjs --check`：通过；`node archify/test/golden.mjs`：全部通过。
+- 26 项真实 Chrome 导出与清理测试通过，无失败或跳过；包含透明 SVG/图片/WebM/GIF、GIF 动画、放大倍率、菜单状态与五种图类型的标签透明。
+- 33 项国际化检查及 8 项 Architecture draft / 分组标题偏移检查通过。最初未设置 Chrome 的 5 项浏览器跳过已用显式 Chrome 路径补跑通过。
+- 编辑器实际鼠标悬停八类文字、键盘焦点、浅色/深色、关闭清除与模型/撤销状态保持经过专用浏览器脚本复核。测试固定 1440×900 桌面视口。
+- 人工查看浅色/深色编辑器与实际图的悬停效果；私有项目数据、本地访问令牌与截图均未上传。
+- 本次未跑完整 npm test；没有宣称完整仓库或远程 CI 通过。当前无官方 Node22/zlib 规范打包环境，因此保留此前官方 ZIP，定制版本通过分支源码提供。

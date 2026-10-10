@@ -134,6 +134,9 @@
   "viewer.export.svg.dark": "SVG · Oscuro",
   "viewer.export.svg.dark.hint": "Siempre oscuro",
   "viewer.export.motion6s": "Movimiento de 6 s",
+  "viewer.export.background": "Fondo",
+  "viewer.export.transparent": "Fondo transparente",
+  "viewer.export.transparent.hint": "PNG / WebP / WebM / GIF / SVG · JPEG conserva el fondo opaco",
   "viewer.export.unsupported": "No compatible con este navegador",
   "viewer.export.clipboardUnsupported": "Este navegador no admite escribir imágenes en el portapapeles",
   "viewer.export.clipboardUnsupported.short": "Escritura de imágenes en el portapapeles no admitida en este navegador.",
@@ -436,5 +439,14 @@
   "viewer.common.copyFailed": "Error al copiar",
   "viewer.common.copyLink": "Copiar enlace",
   "viewer.common.clear": "Borrar",
-  "viewer.common.close": "Cerrar"
+  "viewer.common.close": "Cerrar",
+  "viewer.export.gif.hint": "Bucle de 6 s · PowerPoint",
+  "viewer.export.encodingGif": "Creando GIF animado…",
+  "viewer.export.downloadedGif": "GIF descargado",
+  "viewer.export.scale": "Escala de exportación",
+  "viewer.export.scale.auto": "Predeterminada",
+  "viewer.export.scale.hint": "Predeterminado: imágenes 4×, animación hasta 1280px; SVG vectorial.",
+  "viewer.export.error.scale": "Elige una escala de 1× a 4×",
+  "viewer.export.error.scaleTooLarge": "Esta escala supera el límite de tamaño. Elige una escala menor.",
+  "viewer.export.error.gifRequirements": "La exportación GIF requiere conexiones y soporte Canvas en el navegador"
 }

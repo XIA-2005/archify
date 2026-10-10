@@ -128,6 +128,9 @@
   "viewer.export.vectorMotion.heading": "Vecteur et animation",
   "viewer.export.editable": "Vecteur modifiable",
   "viewer.export.motion6s": "Animation de 6 s",
+  "viewer.export.background": "Arrière-plan",
+  "viewer.export.transparent": "Arrière-plan transparent",
+  "viewer.export.transparent.hint": "PNG / WebP / WebM / GIF / SVG · JPEG conserve un fond opaque",
   "viewer.export.unsupported": "Non pris en charge par ce navigateur",
   "viewer.export.clipboardUnsupported": "L'écriture d'image dans le presse-papiers n'est pas prise en charge par ce navigateur",
   "viewer.export.clipboardUnsupported.short": "L'écriture d'image dans le presse-papiers n'est pas prise en charge par ce navigateur.",
@@ -421,5 +424,14 @@
   "viewer.common.copyFailed": "Échec de la copie",
   "viewer.common.copyLink": "Copier le lien",
   "viewer.common.clear": "Effacer",
-  "viewer.common.close": "Fermer"
+  "viewer.common.close": "Fermer",
+  "viewer.export.gif.hint": "Boucle de 6 s · PowerPoint",
+  "viewer.export.encodingGif": "Création du GIF animé…",
+  "viewer.export.downloadedGif": "GIF téléchargé",
+  "viewer.export.scale": "Échelle d’export",
+  "viewer.export.scale.auto": "Par défaut",
+  "viewer.export.scale.hint": "Par défaut : images 4×, animation jusqu’à 1280px ; SVG vectoriel.",
+  "viewer.export.error.scale": "Choisir une échelle de 1× à 4×",
+  "viewer.export.error.scaleTooLarge": "Cette échelle dépasse la taille limite. Choisir une échelle inférieure.",
+  "viewer.export.error.gifRequirements": "L’export GIF nécessite des connexions et la prise en charge de Canvas"
 }

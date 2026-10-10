@@ -128,6 +128,9 @@
   "viewer.export.vectorMotion.heading": "Vektor & Bewegung",
   "viewer.export.editable": "Editierbarer Vektor",
   "viewer.export.motion6s": "6-Sekunden-Bewegung",
+  "viewer.export.background": "Hintergrund",
+  "viewer.export.transparent": "Transparenter Hintergrund",
+  "viewer.export.transparent.hint": "PNG / WebP / WebM / GIF / SVG · JPEG behält einen deckenden Hintergrund",
   "viewer.export.unsupported": "Von diesem Browser nicht unterstützt",
   "viewer.export.clipboardUnsupported": "Bild-Zwischenablage wird von diesem Browser nicht unterstützt",
   "viewer.export.clipboardUnsupported.short": "Dieser Browser unterstützt keine Bild-Zwischenablage.",
@@ -421,5 +424,14 @@
   "viewer.common.copyFailed": "Kopieren fehlgeschlagen",
   "viewer.common.copyLink": "Link kopieren",
   "viewer.common.clear": "Löschen",
-  "viewer.common.close": "Schließen"
+  "viewer.common.close": "Schließen",
+  "viewer.export.gif.hint": "6 s Schleife · PowerPoint",
+  "viewer.export.encodingGif": "Animiertes GIF wird erstellt…",
+  "viewer.export.downloadedGif": "GIF heruntergeladen",
+  "viewer.export.scale": "Exportmaßstab",
+  "viewer.export.scale.auto": "Standard",
+  "viewer.export.scale.hint": "Standard: Bilder 4×, Animation bis 1280px; SVG bleibt Vektor.",
+  "viewer.export.error.scale": "Exportmaßstab zwischen 1× und 4× wählen",
+  "viewer.export.error.scaleTooLarge": "Dieser Maßstab überschreitet die Exportgröße. Kleineren Maßstab wählen.",
+  "viewer.export.error.gifRequirements": "GIF-Animation benötigt Diagrammverbindungen und Canvas-Unterstützung im Browser"
 }

@@ -125,7 +125,7 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
     for (const width of [390, 720, 1440]) {
       await load({ width, extra: '&fault=unsupported' });
       assert.deepEqual(await run('Object.keys(Archify.exportMenu).sort()'), ['close','downloadReachShareCard','downloadRouteShareCard','isOpen','open','run','shareCard','syncReachShare','syncRouteShare'].sort());
-      assert.deepEqual(await run('Object.keys(Archify.motion).sort()'), ['canRecord','recordWebm']);
+      assert.deepEqual(await run('Object.keys(Archify.motion).sort()'), ['canEncodeGif','canRecord','recordGif','recordWebm']);
       assert.deepEqual(await run(`[...document.querySelectorAll('#export-menu [data-format="jpeg"],#export-menu [data-format="webp"],#export-menu [data-format="webm"],#export-menu [data-action="copy"]')].map(e=>e.disabled)`), [true,true,true,true]);
       await run(`document.getElementById('btn-export').focus()`);
       await key('ArrowUp', 'ArrowUp', 38);
@@ -321,6 +321,37 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
     }
   });
 
+  await t.test('SVG Auto/Light/Dark background toggle decodes transparent pixels in both color schemes', async () => {
+    for(const theme of ['dark','light']){
+      await load({theme});
+      await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-color-scheme',value:theme}]});
+      const live=await run(`document.querySelector('.diagram-container svg').outerHTML`);
+      await run('Archify.exportMenu.open()');await click('[data-action="transparent-background"]');
+      for(const format of ['svg','svg-light','svg-dark']){
+        await run(`Archify.exportMenu.run(${JSON.stringify(format)})`);
+        const result=await run(`(async()=>{
+          const blob=exportDownloads.at(-1).blob,text=await blob.text(),svg=new DOMParser().parseFromString(text,'image/svg+xml').documentElement;
+          const url=URL.createObjectURL(blob),image=new Image();image.src=url;
+          try{
+            await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject});
+            const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);
+            const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;let transparent=0,painted=0;
+            for(let i=3;i<pixels.length;i+=4){if(pixels[i]===0)transparent++;if(pixels[i]===255)painted++;}
+            return {alpha:pixels[3],transparent,painted,grid:svg.querySelectorAll('rect[fill="url(#grid)"]').length,background:svg.querySelectorAll('.c-bg-rect').length,theme:svg.getAttribute('data-theme')};
+          }finally{URL.revokeObjectURL(url);}
+        })()`);
+        assert.equal(result.alpha,0);assert.ok(result.transparent>100);assert.ok(result.painted>100);
+        assert.equal(result.grid,0);assert.equal(result.background,0);
+        assert.equal(result.theme,format==='svg'?null:format.slice(4));
+        if(evidence){const bytes=await run(`exportDownloads.at(-1).blob.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,`${theme}-${format}-transparent.svg`),Buffer.from(bytes));}
+      }
+      await run('Archify.exportMenu.open()');await click('[data-action="transparent-background"]');await run(`Archify.exportMenu.run('svg')`);
+      assert.equal(await run(`(async()=>{const blob=exportDownloads.at(-1).blob,url=URL.createObjectURL(blob),image=new Image();image.src=url;try{await new Promise((r,j)=>{image.onload=r;image.onerror=j});const c=document.createElement('canvas');c.width=c.height=2;const x=c.getContext('2d');x.drawImage(image,0,0);return x.getImageData(0,0,1,1).data[3];}finally{URL.revokeObjectURL(url)}})()`),255);
+      assert.equal(await run(`document.querySelector('.diagram-container svg').outerHTML`),live);
+    }
+    await send('Emulation.setEmulatedMedia',{features:[]});
+  });
+
   await t.test('SVG download declares UTF-8 and preserves CJK text', async () => {
     const originalInput = fs.readFileSync(input, 'utf8');
     try {
@@ -341,6 +372,160 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
       fs.writeFileSync(input, originalInput);
       execFileSync(process.execPath, [path.join(skillRoot, 'renderers/architecture/render-architecture.mjs'), input, file]);
     }
+  });
+
+  await t.test('background toggle preserves real raster alpha, JPEG fallback and keyboard state', async () => {
+    for (const theme of ['dark', 'light']) {
+      await load({ theme });
+      await run('Archify.exportMenu.open()');
+      await click('[data-action="transparent-background"]');
+      assert.equal(await run('Archify.exportMenu.isOpen()'), true);
+      assert.equal(await run(`document.activeElement.getAttribute('role')`), 'menuitemcheckbox');
+      assert.equal(await run(`document.activeElement.getAttribute('aria-checked')`), 'true');
+      await key('ArrowDown', 'ArrowDown', 40);
+      assert.equal(await run('document.activeElement.id'), 'export-scale');
+      for (const format of ['png', 'webp', 'jpeg']) {
+        const result = await run(`(async()=>{
+          await Archify.exportMenu.run(${JSON.stringify(format)});
+          const blob=exportDownloads.at(-1).blob,bitmap=await createImageBitmap(blob);
+          const canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;
+          const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0);bitmap.close();
+          const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+          let opaque=0;for(let i=3;i<pixels.length;i+=4)if(pixels[i]===255)opaque++;
+          return {alpha:pixels[3],opaque,type:blob.type};
+        })()`);
+        assert.equal(result.alpha, format === 'jpeg' ? 255 : 0, `${theme} ${format}`);
+        assert.ok(result.opaque > 100, 'diagram content remains painted');
+      }
+      await run('Archify.exportMenu.open()');
+      await click('[data-action="transparent-background"]');
+      await run(`Archify.exportMenu.run('png')`);
+      assert.equal(await run(`createImageBitmap(exportDownloads.at(-1).blob).then(b=>{const c=document.createElement('canvas');c.width=c.height=2;const x=c.getContext('2d');x.drawImage(b,0,0);b.close();return x.getImageData(0,0,1,1).data[3];})`), 255);
+    }
+  });
+
+  await t.test('native scale selection renders larger raster and GIF frames and preserves vector/size errors', async () => {
+    await load();await run('Archify.exportMenu.open();document.getElementById("export-scale").focus()');
+    await key('Home','Home',36);await key('ArrowDown','ArrowDown',40);await key('ArrowDown','ArrowDown',40);
+    assert.equal(await run('document.getElementById("export-scale").value'),'2');
+    assert.equal(await run('Archify.exportMenu.isOpen()'),true);
+    const vb=await run(`(()=>{const v=document.querySelector('.diagram-container svg').viewBox.baseVal;return {width:v.width,height:v.height};})()`);
+    const dimensions={};
+    for(const format of ['png','jpeg','webp']){
+      dimensions[format]=[];
+      for(const scale of [1,2]){
+        await run(`Archify.exportMenu.run(${JSON.stringify(format)},{scale:${scale}})`);
+        const size=await run(`createImageBitmap(exportDownloads.at(-1).blob).then(b=>{const r=[b.width,b.height];b.close();return r;})`);
+        dimensions[format].push(size);
+      }
+      assert.equal(dimensions[format][1][0],dimensions[format][0][0]*2);
+      assert.equal(dimensions[format][1][1],dimensions[format][0][1]*2);
+    }
+    await run(`Archify.exportMenu.run('gif',{duration:250,fps:8,transparentBackground:true})`);
+    const gif=await run(`(async()=>{const blob=exportDownloads.at(-1).blob;window.scaledGif=blob;const decoder=new ImageDecoder({data:await blob.arrayBuffer(),type:'image/gif'});await decoder.tracks.ready;const {image}=await decoder.decode({frameIndex:0});const c=document.createElement('canvas');c.width=image.displayWidth;c.height=image.displayHeight;const x=c.getContext('2d');x.drawImage(image,0,0);const r={width:image.displayWidth,height:image.displayHeight,alpha:x.getImageData(10,10,1,1).data[3],frames:decoder.tracks.selectedTrack.frameCount};image.close();decoder.close();return r;})()`);
+    assert.equal(gif.width,Math.round(vb.width*2));assert.equal(gif.height,Math.round(vb.height*2));assert.equal(gif.alpha,0);assert.equal(gif.frames,2);
+    const nativeSvg=await run(`(async()=>{const sources=[...exportUrls.values()].filter(u=>u.blob.type.startsWith('image/svg+xml'));const d=new DOMParser().parseFromString(await sources.at(-1).blob.text(),'image/svg+xml').documentElement;return {width:Number(d.getAttribute('width')),height:Number(d.getAttribute('height'))};})()`);
+    assert.equal(nativeSvg.width,vb.width*2);assert.equal(nativeSvg.height,vb.height*2);
+    await run(`Archify.exportMenu.run('svg')`);
+    assert.equal(await run(`exportDownloads.at(-1).blob.text().then(t=>Number(new DOMParser().parseFromString(t,'image/svg+xml').documentElement.getAttribute('width')))`),vb.width);
+    const oversized=await run(`(()=>{const v=document.querySelector('.diagram-container svg');v.setAttribute('viewBox','0 0 10000 10000');return Archify.exportMenu.run('gif',{scale:4}).then(()=>({error:document.documentElement.getAttribute('data-last-export-error-format'),message:exportAlerts.at(-1)}));})()`);
+    assert.equal(oversized.error,'gif');assert.match(oversized.message,/lower scale/);
+    if(evidence){const bytes=await run(`scaledGif.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,'scaled-2x.gif'),Buffer.from(bytes));}
+  });
+
+  await t.test('transparent WebM decodes actual alpha and motion with bounded encoder cleanup', async () => {
+    await load();
+    const result = await run(`(async()=>{
+      const blob=await Archify.motion.recordWebm({transparentBackground:true,duration:500,fps:10});
+      window.alphaBlob=blob;
+      const url=URL.createObjectURL(blob),video=document.createElement('video');video.muted=true;video.src=url;
+      await new Promise((resolve,reject)=>{video.onloadeddata=resolve;video.onerror=()=>reject(new Error('Alpha WebM decode failed'));});
+      await video.play();await new Promise(resolve=>video.requestVideoFrameCallback(resolve));video.pause();
+      const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+      const ctx=canvas.getContext('2d');ctx.drawImage(video,0,0);
+      const first=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      await new Promise(resolve=>{video.onseeked=resolve;video.currentTime=0.3;});
+      ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(video,0,0);
+      const second=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      let transparent=0,opaque=0,changed=0;for(let i=3;i<first.length;i+=4){if(first[i]===0)transparent++;if(first[i]===255)opaque++;if(first[i-1]!==second[i-1]||first[i]!==second[i])changed++;}
+      const duration=video.duration;
+      video.removeAttribute('src');video.load();URL.revokeObjectURL(url);
+      return {transparent,opaque,changed,duration,size:blob.size};
+    })()`);
+    assert.ok(result.transparent > 100, JSON.stringify(result));
+    assert.ok(result.opaque > 100, JSON.stringify(result));
+    assert.ok(result.changed > 10, JSON.stringify(result));
+    assert.equal(result.duration, 0.5);
+    assert.ok(result.size > 0);
+    assert.ok((await record('webm-alpha')).urls.every(u=>u.revoked));
+    if(evidence){const bytes=await run(`alphaBlob.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,'transparent.webm'),Buffer.from(bytes));}
+    await load({ theme: 'light' });
+    await run('Archify.exportMenu.open()');
+    await click('[data-action="transparent-background"]');
+    await click('[data-format="webm"]');
+    await run('exportWait(()=>exportDownloads.length===1)');
+    assert.equal(await run(`document.documentElement.getAttribute('data-last-export-format')`), 'webm');
+    assert.equal(await run(`(async()=>{const url=URL.createObjectURL(exportDownloads[0].blob),v=document.createElement('video');v.src=url;await new Promise((resolve,reject)=>{v.onloadedmetadata=resolve;v.onerror=reject;});const duration=v.duration;v.removeAttribute('src');v.load();URL.revokeObjectURL(url);return duration;})()`), 6);
+    await run('Archify.exportMenu.open()');
+    await click('[data-action="transparent-background"]');
+    await run('window.VideoEncoder=undefined');
+    await run('Archify.exportMenu.open()');
+    await click('[data-action="transparent-background"]');
+    assert.equal(await run(`document.querySelector('[data-format="webm"]').disabled`), true);
+    await click('[data-action="transparent-background"]');
+    assert.equal(await run(`document.querySelector('[data-format="webm"]').disabled`), false);
+    await load();
+    const cleanup = await run(`(async()=>{
+      const Native=VideoEncoder;let configured=0,closed=0;
+      window.VideoEncoder=class extends Native {
+        configure(config){if(++configured===2)throw new Error('alpha configure fault');super.configure(config);}
+        close(){closed++;super.close();}
+      };
+      let message='';try{await Archify.motion.recordWebm({transparentBackground:true,duration:250,fps:10});}catch(e){message=e.message;}
+      await new Promise(resolve=>setTimeout(resolve,0));
+      return {message,closed,revoked:[...exportUrls.values()].every(u=>u.revoked),errors:exportErrors};
+    })()`);
+    assert.deepEqual(cleanup, { message: 'alpha configure fault', closed: 2, revoked: true, errors: [] });
+  });
+
+  await t.test('GIF decodes looping motion and binary transparency without MediaRecorder or trace mode', async () => {
+    for (const transparent of [false,true]) {
+      await load({theme:transparent?'light':'dark'});
+      const result=await run(`(async()=>{
+        window.MediaRecorder=undefined;
+        const svg=document.querySelector('.diagram-container svg');svg.removeAttribute('data-animation');
+        svg.querySelectorAll('[data-animate]').forEach(e=>e.removeAttribute('data-animate'));
+        const blob=await Archify.motion.recordGif({duration:500,fps:12,transparentBackground:${transparent}});
+        window.gifBlob=blob;
+        const decoder=new ImageDecoder({data:await blob.arrayBuffer(),type:'image/gif'});
+        await decoder.tracks.ready;
+        const count=decoder.tracks.selectedTrack.frameCount,loop=decoder.tracks.selectedTrack.repetitionCount;
+        const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+        let first,changed=0,transparent=0,opaque=0,duration=0;
+        for(let i=0;i<count;i++){
+          const {image}=await decoder.decode({frameIndex:i});duration+=image.duration;
+          canvas.width=image.displayWidth;canvas.height=image.displayHeight;ctx.drawImage(image,0,0);image.close();
+          const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+          if(!first){first=pixels;for(let p=3;p<pixels.length;p+=4){if(pixels[p]===0)transparent++;if(pixels[p]===255)opaque++;}}
+          else if(i===count-1)for(let p=0;p<pixels.length;p++)if(pixels[p]!==first[p])changed++;
+        }
+        decoder.close();return {count,loop:loop===Infinity?'infinite':loop,duration,changed,transparent,opaque,size:blob.size,type:blob.type};
+      })()`);
+      assert.equal(result.count,6);assert.equal(result.loop,'infinite');
+      assert.equal(result.duration,500000);assert.ok(result.changed>10,JSON.stringify(result));
+      assert.ok(result.opaque>100);assert.equal(result.type,'image/gif');
+      assert.ok(transparent?result.transparent>100:result.transparent===0,JSON.stringify(result));
+      assert.ok((await record('gif-'+transparent)).urls.every(u=>u.revoked));
+      if(evidence){const bytes=await run(`gifBlob.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,transparent?'transparent.gif':'opaque.gif'),Buffer.from(bytes));}
+    }
+    await load();await run('Archify.exportMenu.open()');await click('[data-format="gif"]');
+    await run('exportWait(()=>exportDownloads.length===1)');
+    const state=await record('gif-menu');
+    assert.equal(state.receipt['data-last-export-format'],'gif');assert.ok(state.downloads[0].name.endsWith('.gif'));
+    assert.equal(await run(`(async()=>{const decoder=new ImageDecoder({data:await exportDownloads[0].blob.arrayBuffer(),type:'image/gif'});await decoder.tracks.ready;const count=decoder.tracks.selectedTrack.frameCount;decoder.close();return count;})()`),72);
+    await load();
+    const failed=await run(`(async()=>{const native=CanvasRenderingContext2D.prototype.getImageData;CanvasRenderingContext2D.prototype.getImageData=()=>{throw Error('gif pixels unavailable');};let message='';try{await Archify.motion.recordGif({duration:250});}catch(e){message=e.message;}finally{CanvasRenderingContext2D.prototype.getImageData=native;}await new Promise(r=>setTimeout(r,0));return {message,revoked:[...exportUrls.values()].every(u=>u.revoked)};})()`);
+    assert.deepEqual(failed,{message:'gif pixels unavailable',revoked:true});
   });
 
   await t.test('recording succeeds with real encoding and releases tracks and the background URL', async () => {

@@ -128,6 +128,9 @@
   "viewer.export.vectorMotion.heading": "Вектор и анимация",
   "viewer.export.editable": "Редактируемый вектор",
   "viewer.export.motion6s": "Анимация 6 с",
+  "viewer.export.background": "Фон",
+  "viewer.export.transparent": "Прозрачный фон",
+  "viewer.export.transparent.hint": "PNG / WebP / WebM / GIF / SVG · JPEG сохраняет непрозрачный фон",
   "viewer.export.unsupported": "Не поддерживается этим браузером",
   "viewer.export.clipboardUnsupported": "Этот браузер не поддерживает запись изображений в буфер обмена",
   "viewer.export.clipboardUnsupported.short": "Запись изображений в буфер обмена не поддерживается в этом браузере.",
@@ -421,5 +424,14 @@
   "viewer.common.copyFailed": "Не удалось скопировать",
   "viewer.common.copyLink": "Скопировать ссылку",
   "viewer.common.clear": "Очистить",
-  "viewer.common.close": "Закрыть"
+  "viewer.common.close": "Закрыть",
+  "viewer.export.gif.hint": "Цикл 6 с · PowerPoint",
+  "viewer.export.encodingGif": "Создание GIF-анимации…",
+  "viewer.export.downloadedGif": "GIF скачан",
+  "viewer.export.scale": "Масштаб экспорта",
+  "viewer.export.scale.auto": "По умолчанию",
+  "viewer.export.scale.hint": "По умолчанию: изображения 4×, анимация до 1280px; SVG векторный.",
+  "viewer.export.error.scale": "Выберите масштаб от 1× до 4×",
+  "viewer.export.error.scaleTooLarge": "Превышен предел размера экспорта. Выберите меньший масштаб.",
+  "viewer.export.error.gifRequirements": "Экспорт GIF требует связей на диаграмме и поддержки Canvas в браузере"
 }

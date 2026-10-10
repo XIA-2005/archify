@@ -554,7 +554,7 @@ test('architecture: auto viewBox keeps expanded boundary titles readable at desk
   );
 });
 
-test('architecture: boundary labels and their masks paint above relationship routes', () => {
+test('architecture: boundary labels and their layout rectangles follow relationship routes', () => {
   const d = load('architecture');
   const { code, stderr, outPath } = render('architecture', d);
   assert.equal(code, 0, stderr);
@@ -565,12 +565,12 @@ test('architecture: boundary labels and their masks paint above relationship rou
   assert.ok(firstBoundaryLabel >= 0, 'expected a foreground boundary label group');
   assert.ok(
     firstBoundaryLabel > lastRoute,
-    'boundary labels must paint after relationship routes so routes cannot cross the title text',
+    'boundary text must remain above relationship routes',
   );
   assert.match(
     html.slice(firstBoundaryLabel, firstBoundaryLabel + 500),
     /data-graph-role="structural-frame-label-mask"/,
-    'expected an opaque mask behind the foreground boundary title',
+    'expected the retained layout rectangle behind the foreground boundary title',
   );
 });
 

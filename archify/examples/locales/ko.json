@@ -128,6 +128,9 @@
   "viewer.export.vectorMotion.heading": "벡터 및 동작",
   "viewer.export.editable": "편집 가능한 벡터",
   "viewer.export.motion6s": "6초 동작",
+  "viewer.export.background": "배경",
+  "viewer.export.transparent": "투명 배경",
+  "viewer.export.transparent.hint": "PNG / WebP / WebM / GIF / SVG · JPEG는 불투명 배경 유지",
   "viewer.export.unsupported": "이 브라우저에서 지원하지 않습니다",
   "viewer.export.clipboardUnsupported": "이 브라우저는 이미지 클립보드 쓰기를 지원하지 않습니다",
   "viewer.export.clipboardUnsupported.short": "이 브라우저는 이미지 클립보드 쓰기를 지원하지 않습니다.",
@@ -436,5 +439,14 @@
   "viewer.rail.controls": "측면 패널",
   "viewer.rail.collapse": "측면 패널 접기",
   "viewer.rail.bottom": "패널을 다이어그램 아래로 이동",
-  "viewer.rail.right": "패널을 다이어그램 옆으로 이동"
+  "viewer.rail.right": "패널을 다이어그램 옆으로 이동",
+  "viewer.export.gif.hint": "6초 반복 · PowerPoint",
+  "viewer.export.encodingGif": "GIF 애니메이션 생성 중…",
+  "viewer.export.downloadedGif": "GIF 다운로드 완료",
+  "viewer.export.scale": "내보내기 배율",
+  "viewer.export.scale.auto": "기본값",
+  "viewer.export.scale.hint": "기본: 이미지 4×, 애니메이션 최대 너비 1280px. SVG는 벡터 유지.",
+  "viewer.export.error.scale": "1×에서 4× 사이의 배율을 선택하세요",
+  "viewer.export.error.scaleTooLarge": "내보내기 크기 제한을 초과했습니다. 더 낮은 배율을 선택하세요.",
+  "viewer.export.error.gifRequirements": "GIF 내보내기에는 다이어그램 연결과 브라우저 Canvas 지원이 필요합니다"
 }

@@ -254,6 +254,18 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <button data-action="reach-share-card" type="button" role="menuitem" tabindex="-1" hidden disabled><span class="export-item-copy"><strong>{{i18n:viewer.export.reachShareCard}}</strong><small class="hint">1200&times;630 PNG</small></span></button>
           <button data-action="copy" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>{{i18n:viewer.export.copyDiagram}}</strong><small class="hint">{{i18n:viewer.export.clipboardPng}}</small></span></button>
         </div>
+        <div class="export-menu-section" role="group" aria-label="{{i18n:viewer.export.background}}">
+          <span class="export-menu-heading" aria-hidden="true">{{i18n:viewer.export.background}}</span>
+          <button data-action="transparent-background" type="button" role="menuitemcheckbox" aria-checked="false" tabindex="-1"><span class="export-item-copy"><strong>{{i18n:viewer.export.transparent}}</strong><small class="hint">{{i18n:viewer.export.transparent.hint}}</small></span><span class="export-background-check" aria-hidden="true"></span></button>
+        </div>
+        <div class="export-menu-section export-resolution" role="group" aria-label="{{i18n:viewer.export.scale}}">
+          <label for="export-scale">{{i18n:viewer.export.scale}}</label>
+          <select id="export-scale" aria-describedby="export-scale-hint">
+            <option value="auto">{{i18n:viewer.export.scale.auto}}</option>
+            <option value="1">1×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option>
+          </select>
+          <small id="export-scale-hint" class="hint">{{i18n:viewer.export.scale.hint}}</small>
+        </div>
         <div class="export-menu-section" role="group" aria-label="{{i18n:viewer.export.raster}}">
           <span class="export-menu-heading" aria-hidden="true">{{i18n:viewer.export.image}}</span>
           <button data-format="png" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>PNG</strong><small class="hint">{{i18n:viewer.export.lossless}}</small></span></button>
@@ -266,6 +278,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <button data-format="svg-light" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>{{i18n:viewer.export.svg.light}}</strong><small class="hint">{{i18n:viewer.export.svg.light.hint}}</small></span></button>
           <button data-format="svg-dark" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>{{i18n:viewer.export.svg.dark}}</strong><small class="hint">{{i18n:viewer.export.svg.dark.hint}}</small></span></button>
           <button data-format="webm" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>WebM</strong><small class="hint">{{i18n:viewer.export.motion6s}}</small></span></button>
+          <button data-format="gif" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>GIF</strong><small class="hint">{{i18n:viewer.export.gif.hint}}</small></span></button>
         </div>
       </div>
     </div>

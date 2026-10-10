@@ -32,6 +32,13 @@ surface; release identity changes also belong in `template.source.html`.
 
 ## Export contract
 
+Label backing rectangles remain in the SVG for measured layout and validation,
+but `.c-mask:has(+ text)` paints no fill in all themes and presets. This covers
+relationship labels and frame/segment/phase titles across the five renderers,
+including exported SVG and rasters. Node and sequence activation backings precede
+their visible shapes, retain the theme mask fill, and still hide underlying
+routes during semantic previews.
+
 `export.js` contains the complete Export heading and IIFE. It initializes once
 at its original position after Theme/Preset and before Motion Governor and
 Source Evidence. `export-cleanup.js` stays private to that closure. Assembly has
@@ -117,6 +124,38 @@ are part of the interface, not normalized by the extraction.
 recordWebm retains duration/fps options, defaults, minimums, MIME selection,
 geometry-driven scene and encoder flush timing. This table describes existing
 paths; it does not add universal recovery from arbitrary browser API exceptions.
+
+GIF export creates a six-second loop at 12 fps, reusing the
+selected export scale for native-resolution rendering. The scale selector offers
+Default / 1× / 2× / 3× / 4× for images, clipboard, GIF and WebM. Explicit scales
+use source SVG content units (raster figures include scaled titles/margins);
+Default keeps existing raster 4× and motion 1280px-fit behavior. `options.scale`
+also works through the export/motion APIs. Explicit exports exceeding 16 Mi pixels
+or 8192px on either side fail clearly without quietly reducing resolution.
+SVG stays vector; semantic share cards retain their existing 1200×630 contract.
+GIF reuses the
+WebM relationship-trace scene even for static diagrams. It uses an adaptive
+global 256-color palette, native GIF89a LZW compression and full-frame disposal
+to avoid motion trails on transparent slides. Background selection also applies
+to GIF; its transparency is binary (no partial alpha). `motion.recordGif` accepts
+duration/fps options bounded to 30 seconds/24 fps. Encoding yields between frames
+and releases its source URL on success or failure, with no external dependency.
+The Background menu checkbox defaults to off and stays selected for the current
+Viewer session. PNG, WebP and ordinary PNG clipboard copy accept the selection;
+transparent figures keep their title and diagram but omit page/card paint,
+shadow, border and grid. JPEG always retains the original opaque figure.
+SVG Auto/Light/Dark also respect background selection: transparent SVG omits
+the full-canvas background rectangle and grid while preserving vector geometry,
+theme variables, fonts and node/card fills. Auto-theme SVG remains transparent
+under either color scheme. Semantic share cards keep their existing background.
+`exportMenu.run(format, { transparentBackground: true })` can override the menu.
+`motion.recordWebm({ transparentBackground: true })` uses WebCodecs VP8 encoders
+for color and an I420 alpha plane, with WebM AlphaMode and BlockAdditional ID 1.
+It encodes the same scene at fixed timestamps, includes duration and keyframe
+cues, and closes both encoders on success or failure. Transparent recording
+requires WebCodecs VP8 support and accepts up to 60 seconds / 60 fps. Missing
+WebCodecs disables WebM while the checkbox is on; encoding failures are reported
+through the existing export error path without downloading an opaque substitute.
 
 `export-browser.test.mjs` exercises native menu input, unavailable formats,
 auto-open/themes, real semantic cards, clipboard call order/fallback, raster

@@ -1,7 +1,11 @@
 {
+  "upstreamCommit": "54edef453ca3fc495f488c30de97eaea0c789f19",
+  "date": "2026-10-11",
+  "source": "archify",
+  "schemaVersion": 1,
   "files": [
     {
-      "sha256": "f0149d89f5764c39d08b007d625957aecfd191c89ba738f457ef17f5fa3fac4e",
+      "sha256": "2853466486f2d1aac79edabcecd687afaf5b50e829c399da13e5bbe8fbc383a3",
       "path": "SKILL.md"
     },
     {
@@ -17,7 +21,7 @@
       "path": "editor/benchmark-routes.mjs"
     },
     {
-      "sha256": "4142da249c0c3f450cf4e54304def0ed56197a1b7bfa96be3fc75847d3d96b18",
+      "sha256": "ae2b4a64bd5038842d38bbeb29f789dec9cb2a82eb742b0483cf30aa4227e9e2",
       "path": "editor/editor.html"
     },
     {
@@ -29,7 +33,7 @@
       "path": "editor/orthogonal-tools.mjs"
     },
     {
-      "sha256": "25aefaea0242766339addf8122c1248fba204596ee39e70d2eb60493345e39f6",
+      "sha256": "26d549c67bd69f20ee1992011bfec4df174f046b780de01fa75c298a8730a57e",
       "path": "editor/README.md"
     },
     {
@@ -77,7 +81,7 @@
       "path": "editor/test-font-drag.mjs"
     },
     {
-      "sha256": "4c6f96108fc0e1c3e88684c62e007a59d4547281651d607c9ecb56b21ba5da5d",
+      "sha256": "a3fca1bf43de6c9d5b8584579edd0c40965ce72661dd5058838a500770b5c10c",
       "path": "editor/test-interaction.mjs"
     },
     {
@@ -101,7 +105,7 @@
       "path": "editor/test-text-geometry.mjs"
     },
     {
-      "sha256": "9c9a1ce560988b984f8b0e8c21434f3e80bfdc088256ba2197a03340bedf490a",
+      "sha256": "e2dca0a1483c6152751658e7c4b6113d360997e2e2f15b5fe387bc65fc081761",
       "path": "references/authoring-defaults.md"
     },
     {
@@ -113,7 +117,7 @@
       "path": "renderers/architecture/labels.mjs"
     },
     {
-      "sha256": "98bfaf6e185ea9884abbd465316dcab8009ccb30df4369cc642f9f172d808f3c",
+      "sha256": "813b6bb59fbb00c1c2a9aa3eb82c7415a3c3fcc03219d10efa05dd6b406d50d4",
       "path": "renderers/architecture/render-architecture.mjs"
     },
     {
@@ -121,7 +125,7 @@
       "path": "renderers/shared/cli.mjs"
     },
     {
-      "sha256": "78eba240c4c8e82f32778fc981391591a31aa89e859f421c8d06d23034b41c78",
+      "sha256": "634eb315afdf6679d202183e4d4506ec27ca13dfcf8d943a2ae0f4ac2ce9683b",
       "path": "renderers/shared/generated-validators.mjs"
     },
     {
@@ -141,7 +145,7 @@
       "path": "renderers/shared/validator.mjs"
     },
     {
-      "sha256": "0ed8cc3f5d6b15c43a783c73ff79e5ad23d81dc7a30e8a787fe406362ba1409b",
+      "sha256": "8600638d9a1d93119c83e767c273bef4f8ca42681edb91749c134a2d8eea711c",
       "path": "schemas/architecture.schema.json"
     },
     {
@@ -161,40 +165,113 @@
       "path": "editor/deliver.mjs"
     },
     {
-      "sha256": "c381e1a38cc0c4d3f292830dc563b6a0e59fa5a240162c46fa2eb5d013f7e391",
+      "sha256": "7df2e4267ed92a03206b1c3239505e03906554ba63612403349c95522901a190",
       "path": "LOCAL_CUSTOMIZATION.md"
     },
     {
-      "sha256": "913877197406961bf0bf5c87dc0bdf143f15f3c1fb23a0dfdf12dd48852cea73",
+      "sha256": "ce06f47acdae3cf3ab7d2fce69ff4773b523cf5ff7f59b5b6f2188bad1412392",
       "path": "assets/template.html"
     },
     {
-      "sha256": "6d6790f1fa3631241dba4065e33ba2ce947a1da032cdd6d7d44c7190f85d3f5d",
+      "sha256": "bc4c27f6bc8e8e60ec404c43b56a24cc2d94e4a0376ae3f97b9d77fdb44f3dad",
       "path": "examples/dataflow-product-analytics.html"
     },
     {
-      "sha256": "0874c0723b10104ea03c566d1d63d958b6f93a6788c0075c1d1d162ccdb4054c",
+      "sha256": "a52a83109682f45e73fb689c9c0bcafa473456ffa57cb8bab5eaefece5cbb3cb",
       "path": "examples/lifecycle-agent-run.html"
     },
     {
-      "sha256": "307951a168d2492eb0c41f318260d0a866f6e6057df5253d3528c32a23084ea3",
+      "sha256": "890efe71c07a87c28838480141ad0b3e3db130091f76d087e8adfb30e0d56aec",
       "path": "examples/sequence-cache-miss-request.html"
     },
     {
-      "sha256": "947619c3df95709ddb72410dc9bb53c39173c8d1aeaf1c9109ac1bb2f1d63a24",
+      "sha256": "c35479c3d6e507ab5dab9ee5244d52b3368d5dacfab2dc8af638bfd96455411d",
       "path": "examples/web-app-rendered.html"
     },
     {
-      "sha256": "3edbb38a05430865ee2f620c35de49f8e78dfd8788be14840d9e134b5912230d",
+      "sha256": "0f1acb7ad6349fd693e5f0d20042bd2e45c7af4ec97e863d8774325162035821",
       "path": "examples/workflow-agent-tool-call-rendered.html"
     },
     {
       "sha256": "0ec9580341e403dfda0d7a8c16916379c55ea8577db8911fd91a81453cdd3f1a",
       "path": "references/delivery-contract.md"
+    },
+    {
+      "path": "renderers/shared/i18n.mjs",
+      "sha256": "f8fdf88ed70c1a60c93805e13f3a3b0c8d3013b552cf27ac80ceb0ea7d0564cd"
+    },
+    {
+      "path": "test/export-browser.test.mjs",
+      "sha256": "0cc5e8faff6e4a1b216dba7bb677f60ba6c57d5e04e44943d16b790b434bb15b"
+    },
+    {
+      "path": "test/export-cleanup-browser.test.mjs",
+      "sha256": "6bb677e8e27059d1ff7088870b5e1e4ae3c7cf78d554477da213e38f35972518"
+    },
+    {
+      "path": "examples/locales/de.json",
+      "sha256": "32ae73553ef872e1d476dc2b32ffc43dd15acb375d67d1c06384f38df2b0651c"
+    },
+    {
+      "path": "examples/locales/es.json",
+      "sha256": "3bbe11699f6ac9fbb64f169061d1cc479cc353552ba6824be6556151bccf3c75"
+    },
+    {
+      "path": "examples/locales/fr.json",
+      "sha256": "fb2e9582fccff25279a5279c3e649de0419114585fec15b16764f36f0693da26"
+    },
+    {
+      "path": "examples/locales/it.json",
+      "sha256": "b3c8c4b53f2ffab19a7afb64b94e365e7882ae0b1366c63a4cbaea57108b5b83"
+    },
+    {
+      "path": "examples/locales/ja.json",
+      "sha256": "0765837390fa9eb23505cbcdf29c041ba996250a729db5c5cf3405d2223cf568"
+    },
+    {
+      "path": "examples/locales/ko.json",
+      "sha256": "c7a3950c729cce5e1c5b3d775f100fd489ec6ef5c0f41847ff57383aab868678"
+    },
+    {
+      "path": "examples/locales/pt.json",
+      "sha256": "a86c482ae7a4f750fe8bbd3a336bea5851b02a0e2306aaaf96f62b4f5b99b9d3"
+    },
+    {
+      "path": "examples/locales/ru.json",
+      "sha256": "cddf3ed698c5c36722ceffc0e3d31744f4fe31841bf252fb008f8ee3def50953"
+    },
+    {
+      "path": "bin/archify.mjs",
+      "sha256": "306971b412bdd58a868315c769c30aab6cf255be2638b040bac08931b1ca8c37"
+    },
+    {
+      "path": "bin/draft.mjs",
+      "sha256": "7222545eedd46ed6105292096225ba7088d994c6fe959be946905063390d1da6"
+    },
+    {
+      "path": "editor/test-boundary-label.mjs",
+      "sha256": "7334cb647381286e008198e80d932f4888e8b5b0a9f08b41747230266ef00826"
+    },
+    {
+      "path": "editor/test-viewport.mjs",
+      "sha256": "36d3132af5235c7157954e9f95bec9b71528f84740ac8134646b289c3a04670e"
+    },
+    {
+      "path": "references/architecture-draft.md",
+      "sha256": "542a0768dbbfaa11496af1b89ad609abbd4482f2fae9a357d30acd05ebf59966"
+    },
+    {
+      "path": "test/architecture-draft.test.mjs",
+      "sha256": "d49cb53a0c6eb9e6c68f139c1089e353956ae863e67990fe1d3f4c67d0ea5fd2"
+    },
+    {
+      "path": "test/boundary-title-offset.test.mjs",
+      "sha256": "c68f4e437cd844b8eed01a6668b5d161d6403e30923d6db09010a8d70ee29b84"
+    },
+    {
+      "path": "test/layout-rules.test.mjs",
+      "sha256": "b745b6bc9797ba9fccf973c0c7ba06cefa37c854054e4f572691f932ae4a1e02"
     }
   ],
-  "upstreamCommit": "54edef453ca3fc495f488c30de97eaea0c789f19",
-  "schemaVersion": 1,
-  "date": "2026-10-10",
   "requiredEditor": "Archify · 可视化编辑器"
 }

@@ -22,6 +22,16 @@ This is a local customization restored from the user's prior editor version. Kee
 
 **Core priority: a beautiful, immediately understandable diagram.** Design the reader's main journey and visual hierarchy **before** coordinates, routing, CLI checks, or starting an editor. Deterministic checks establish technical validity, **not** aesthetic acceptance. Follow [Visual acceptance](references/visual-acceptance.md) before claiming a diagram is polished.
 
+## User-required export and text editing behavior
+
+Preserve these capabilities in the Skill runtime, generated HTML and matching editor:
+
+- Offer a selectable transparent background for PNG/WebP images, PNG clipboard copy, WebM, GIF and all SVG variants (Auto/Light/Dark). Transparent SVG must omit the canvas background rectangle and background grid, retain node/card fills and vector geometry, and remain transparent when its theme changes. Keep the normal opaque default. JPEG cannot carry transparency; use PNG/WebP when transparency is requested. Transparent WebM requires native WebCodecs VP8 support; disable unsupported transparent recording and explain the limitation rather than silently flattening it.
+- For animated images intended for PowerPoint, offer GIF export: a six-second looping relationship trace, also available for otherwise static diagrams without changing their JSON or default animation. GIF uses an adaptive 256-color palette and binary transparency; preserve the existing WebM export for richer colors and alpha. In desktop PowerPoint, insert the GIF as a picture and preview it in Slide Show.
+- Offer export scale choices Default / 1× / 2× / 3× / 4× for PNG/JPEG/WebP, PNG clipboard, GIF and WebM. Explicit scales refer to the source diagram's content pixels and must rasterize SVG and motion at that target resolution, never enlarge a cached low-resolution bitmap. Keep existing default quality (images 4× subject to their existing safe size, motion fitted to 1280px); reject oversized explicit scales clearly instead of silently reducing them. SVG remains vector and semantic share cards keep their fixed size.
+- Keep relationship labels and dashed-frame/boundary titles transparent in light/dark themes and exported images. Enlarging text must not create a white or dark backing block over other elements. Preserve node/card fills and the existing connection strokes and crossover masks; the user withdrew the request to make connections themselves transparent.
+- In the Architecture visual editor, clicking a connection label must select its connection, open the inspector and focus its text input. Support editing both content (`label`) and size (`font_sizes.label`), keyboard activation, undo/redo, draft export and validated save. Preserve the connection endpoints and route unless the user requests routing changes. See [Editor controls](editor/README.md).
+
 ## Permanent invariant: performance must never reduce delivery quality
 
 **The user explicitly requires: 任何改动不得对交付质量有影响（任何性能优化都不能降低交付质量）.** Treat this as a standing, non-negotiable Archify Skill rule for every future change to the Skill, CLI, renderer, editor, and generation workflow. Performance is a secondary objective after source fidelity, diagram semantics, aesthetics, and fully verified dual delivery.
@@ -68,7 +78,7 @@ Use this path for ordinary generation. Read branch references only when their st
 
 1. Choose `architecture`, `workflow`, `sequence`, `dataflow`, or `lifecycle` from the question.
 2. Use the exact schema and example paths in the Type router without listing their directories. Read [Authoring defaults](references/authoring-defaults.md) and the mode's example in a bounded batch separate from project documents and complete schemas so neither is truncated; recover any missing section before writing. For Architecture, use the matching showcase example. For Sequence, Dataflow, and Lifecycle, also read the mode and common schemas. Read the relevant schema definition before choosing any new field, enum, or constrained text, especially boundary kinds. Examples teach shape, not facts. Use fresh IDs, wording, and layout. Go directly to the candidate without preliminary help, doctor, starter validation, temporary diagrams, or output-path listing. Query brands only for an explicitly requested mark; read [Brand marks](references/brand-marks.md) for an unknown mark with a user-provided URL.
-3. Once scope and source evidence are covered, first identify the **reader's task, the ordered main path and genuine branches**, then group cooperating roles next to their owners. Establish hierarchy, legible labels, node sizes, and clear edge corridors **before** assigning positions. Avoid ultra-wide strips with disconnected lower nodes. Do not narrate coordinate planning. Preserve all required facts and conditions; there are no arbitrary node/edge quotas. Use automatic routes initially and hand-set routing only for diagnosed defects. Set `meta.quality_profile` to `"showcase"` unless the user requests dense `standard`.
+3. Once scope and source evidence are covered, first identify the **reader's task, the ordered main path and genuine branches**, then group cooperating roles next to their owners. For a **new Architecture without user-fixed geometry**, use [Deterministic Architecture draft](references/architecture-draft.md): write `semantic.json` without coordinates, sizes, viewBox or manual route controls, then run `node bin/archify.mjs draft architecture <semantic.json> <candidate.json> --json` (include `--repo-root` for repository evidence). Use the resulting candidate for step 4; retain the draft receipt. This is the default for every model, not a weaker-model quality exemption. If no proposal passes, read the diagnostics and repair or author geometry manually under the existing contract. Existing supplied geometry remains authoritative and skips drafting. For other modes or manual Architecture authoring, establish hierarchy, legible labels, node sizes, and clear edge corridors **before** assigning positions. Preserve all required facts and conditions; there are no arbitrary node/edge quotas. Use automatic routes initially and hand-set routing only for diagnosed defects. Set `meta.quality_profile` to `"showcase"` unless the user requests dense `standard`.
 4. Once the complete first candidate is written, run `editor/deliver.mjs`. It invokes the original `finalize` once, starting with showcase validation; successful first drafts need no separate pre-validation. Keep the candidate unchanged while the command runs:
 
    ```bash
@@ -136,6 +146,11 @@ It edits typed JSON, validates before saving, makes backups, and uses original f
 Start it only after delivery gates pass. Its official route cache never substitutes
 unverified dashed guides for checked geometry. Auto-layout proposals and large-graph
 navigation remain optional; they cannot bypass validation or visual acceptance.
+The architecture visual editor provides a persistent light/dark toggle for the UI and editable canvas; changing editor theme does not alter typed JSON or export theme.
+For relationship text edits, let users click the label in the local editor;
+its inspector edits `label` and `font_sizes.label` with undo/redo. Keep label
+backings transparent and preserve the connection endpoints and route unless
+the user also requests routing changes.
 See editor/README.md for complete controls, limits and performance audits.
 `meta.animation: "trace"` is opt-in.
 
@@ -157,3 +172,5 @@ When shell access is unavailable, hand-place architecture SVG into `assets/templ
 State the actual `visual_review` status alongside automated evidence and the double-delivery outputs. Only an inspected image meeting [Visual acceptance](references/visual-acceptance.md) may be called visually polished; `finalize`, an editor preview, or a screenshot receipt alone cannot confer that claim. A visually unfinished chart must be called out explicitly.
 
 For each new diagram delivery, return **both** the checked HTML absolute path and the live visual editor page URL (plus the `candidate.json` source path), following Mandatory dual delivery. Include the diagram type, validation summary, specification/artifact receipt, browser-evidence status, and truthful visual-review status. If either output is unavailable, disclose the missing deliverable explicitly rather than presenting the dual delivery as complete. Do not claim success for a non-zero command or claim visual inspection you did not perform.
+
+In the architecture editor batch-font picker, hovering or focusing a text category highlights its corresponding diagram elements; leaving or closing the picker clears the preview without changing the model, selection or undo history.

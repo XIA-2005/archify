@@ -310,7 +310,7 @@ function layoutBoundaryTitles(rawBoundaries, minimumFontSize) {
       ...boundary,
       y,
       height: bottom - y,
-      title,
+      title: boundary.labelOffset ? { ...title, x: title.x + boundary.labelOffset[0], y: title.y + boundary.labelOffset[1] } : title,
     };
   });
 }
@@ -1001,7 +1001,7 @@ ${[...components.values()].map(renderComponent).join('\n\n')}
         <!-- Connection labels -->
 ${asArray(arch.connections).map(renderConnectionLabel).join('\n')}
 
-        <!-- Boundary labels (foreground masks keep routes out of titles) -->
+        <!-- Boundary labels (transparent backing rectangles retain layout geometry) -->
 ${boundaries.map(renderBoundaryLabel).join('\n\n')}
 
         <!-- Legend -->

@@ -12,6 +12,8 @@ Relationship labels carry meaning. Give them clear space and preserve action, pr
 
 ## Layout and routing
 
+For a fresh Architecture without fixed geometry, follow [Deterministic Architecture draft](architecture-draft.md) before manual placement. It compiles semantic JSON into a checked candidate using the existing renderer. The rules below guide manual fallback and evidence-based repair; drafting does not replace delivery or visual acceptance.
+
 Place Architecture nodes by their actual connections before assigning coordinates; the router cannot rearrange boxes, so placement decides whether lines stay straight. Classify each relationship first, then place:
 
 - **Main path**: the reader's main journey, neighbors adjacent in reading order. Let a medium path step through meaningful rows instead of making a shallow horizontal strip.
