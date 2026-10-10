@@ -8,20 +8,29 @@ import {
 
 export { esc };
 
-export function renderDefinitions() {
+export function arrowGeometry(scale = 1) {
+  // Leave one scaled unit past the apex; retain the earlier local clipping fix.
+  return { markerWidth: 11 * scale, markerHeight: 7 * scale, refX: 9 * scale, refY: 3.5 * scale,
+    points: `0 0, ${10 * scale} ${3.5 * scale}, 0 ${7 * scale}` };
+}
+
+export function renderDefinitions({ fixedArrows = false, clipArrows = false, arrowScale = 1 } = {}) {
+  const units = fixedArrows ? ' markerUnits="userSpaceOnUse"' : '';
+  const g = arrowGeometry(arrowScale);
+  if (!fixedArrows && !clipArrows) g.markerWidth = 10 * arrowScale;
   return `        <!-- Definitions -->
         <defs>
-          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" class="m-default" />
+          <marker id="arrowhead"${units} markerWidth="${g.markerWidth}" markerHeight="${g.markerHeight}" refX="${g.refX}" refY="${g.refY}" orient="auto">
+            <polygon points="${g.points}" class="m-default" />
           </marker>
-          <marker id="arrowhead-emphasis" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" class="m-emphasis" />
+          <marker id="arrowhead-emphasis"${units} markerWidth="${g.markerWidth}" markerHeight="${g.markerHeight}" refX="${g.refX}" refY="${g.refY}" orient="auto">
+            <polygon points="${g.points}" class="m-emphasis" />
           </marker>
-          <marker id="arrowhead-security" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" class="m-security" />
+          <marker id="arrowhead-security"${units} markerWidth="${g.markerWidth}" markerHeight="${g.markerHeight}" refX="${g.refX}" refY="${g.refY}" orient="auto">
+            <polygon points="${g.points}" class="m-security" />
           </marker>
-          <marker id="arrowhead-dashed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" class="m-dashed" />
+          <marker id="arrowhead-dashed"${units} markerWidth="${g.markerWidth}" markerHeight="${g.markerHeight}" refX="${g.refX}" refY="${g.refY}" orient="auto">
+            <polygon points="${g.points}" class="m-dashed" />
           </marker>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
             <path d="M 40 0 L 0 0 0 40" class="c-grid" stroke-width="0.5"/>
@@ -106,16 +115,17 @@ export function renderSemanticSigil(kind, { x, y, size = SEMANTIC_SIGIL_SIZE, ic
 }
 
 export function renderCards(cards) {
+  const fontStyle = size => size == null ? '' : ` style="font-size:${size}px;line-height:1.5;overflow-wrap:anywhere"`;
   const list = Array.isArray(cards) ? cards : [];
   return `    <!-- Info Cards -->
     <div class="cards">
 ${list.map((card) => `      <div class="card">
         <div class="card-header">
           <div class="card-dot ${esc(card.dot)}"></div>
-          <h3>${esc(card.title)}</h3>
+          <h3${fontStyle(card.font_sizes?.title)}>${esc(card.title)}</h3>
         </div>
         <ul>
-${card.items.map((item) => `          <li>${esc(item)}</li>`).join('\n')}
+${card.items.map((item, index) => `          <li${fontStyle(card.font_sizes?.items?.[index])}>${esc(item)}</li>`).join('\n')}
         </ul>
       </div>`).join('\n\n')}
     </div>`;
@@ -149,6 +159,7 @@ export function applyTemplate(template, {
   locale,
   visualPreset = 'classic',
   sourceEvidence = null,
+  fontSizes = {},
 }) {
   if (!SVG_SLOT_RE.test(template)) {
     throw new Error('applyTemplate: template missing ARCHIFY:SVG_SLOT sentinel');
@@ -176,14 +187,14 @@ export function applyTemplate(template, {
   const resolvedLocale = resolveLocale(locale);
   const i18nJson = serializeScriptJson({ locale: resolvedLocale, messages: viewerCatalog(resolvedLocale) });
   const renderedSubtitle = typeof subtitle === 'string' && subtitle.trim()
-    ? `<p class="subtitle">${esc(subtitle)}</p>`
+    ? `<p class="subtitle"${fontSizes.subtitle == null ? '' : ` style="font-size:${fontSizes.subtitle}px;line-height:1.5;overflow-wrap:anywhere"`}>${esc(subtitle)}</p>`
     : '';
   const i18nData = `    <script id="archify-i18n-data" type="application/json">${i18nJson}</script>`;
   return localizeTemplate(template, resolvedLocale)
     .replace(I18N_PLACEHOLDER, () => i18nData)
     .replace(TEMPLATE_PLACEHOLDERS[0], () => `<html lang="${esc(resolvedLocale)}" data-theme="dark" data-preset="${esc(visualPreset)}">`)
     .replace(TEMPLATE_PLACEHOLDERS[1], () => `<title>${esc(translateMessage(resolvedLocale, 'page.title', { title }))}</title>`)
-    .replace(TEMPLATE_PLACEHOLDERS[2], () => `<h1>${esc(title)}</h1>`)
+    .replace(TEMPLATE_PLACEHOLDERS[2], () => `<h1${fontSizes.title == null ? '' : ` style="font-size:${fontSizes.title}px;line-height:1.3;overflow-wrap:anywhere"`}>${esc(title)}</h1>`)
     .replace(SUBTITLE_SLOT_RE, (_match, indent, newline = '') => renderedSubtitle
       ? `${indent}${renderedSubtitle}${newline}`
       : '')

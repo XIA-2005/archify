@@ -83,4 +83,14 @@ export function validateSchema(diagramType, data) {
       diagnostics,
     );
   }
+  for (const [index, card] of (data.cards || []).entries()) {
+    if (card.font_sizes?.items && card.font_sizes.items.length !== card.items.length) {
+      throwDiagnosticError('Card font_sizes.items must match its body item count.', [{
+        code: 'schema/card-font-count', severity: 'error', message: 'Card font_sizes.items must match its body item count.',
+        subject: { diagramType, path: `/cards/${index}/font_sizes/items` },
+        evidence: { items: card.items.length, fontSizes: card.font_sizes.items.length },
+        supportedFixes: ['provide one font size or null for each card item'],
+      }]);
+    }
+  }
 }

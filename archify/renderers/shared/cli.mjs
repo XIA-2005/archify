@@ -264,6 +264,7 @@ export function writeDiagram({ outPath, template, diagramType, meta, svg, cards,
   const outputGuard = outputPathGuards.get(outPath);
   const html = applyTemplate(template, {
     title: meta.title,
+    fontSizes: meta.font_sizes,
     subtitle: meta.subtitle,
     svg,
     cards: renderCards(cards),
@@ -399,13 +400,13 @@ export function svgAccessibleText(meta, kind) {
   return `        <title id="archify-diagram-title">${esc(meta.title)}</title>\n        <desc id="archify-diagram-description">${esc(description)}</desc>`;
 }
 
-export function animateAttr(meta, kind, step) {
-  if (meta.animation !== 'trace') return '';
+export function animateAttr(meta, kind, step, style = '') {
+  if (meta.animation !== 'trace') return style ? ` style="${esc(style)}"` : '';
   // Ambient trace must finish inside the fixed six-second WebM capture. The
   // cap affects visual delay only; authored order and semantic identity stay
   // untouched in the JSON, DOM, and relationship contracts.
   const safeStep = Number.isFinite(step) && step >= 0 ? Math.min(12, Math.floor(step)) : 0;
-  return ` data-animate="${kind}" style="--step:${safeStep}"`;
+  return ` data-animate="${kind}" style="--step:${safeStep}${style ? ';'+esc(style) : ''}"`;
 }
 
 // Stable semantic hooks for the standalone HTML explorer. IDs already pass

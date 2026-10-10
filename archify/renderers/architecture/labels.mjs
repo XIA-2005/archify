@@ -6,6 +6,7 @@ import { createSpatialGrid } from '../shared/spatial-grid.mjs';
 export function placeAutomaticLabels({
   labels, routes, components, titles, viewBox, placementBottom = viewBox[1], fallbackRing = true, keepFallbackNearRoute = false,
   gridSweep = false,
+  arrows = [],
 }) {
   const placed = [...labels];
   const obstacles = [...components, ...titles];
@@ -34,6 +35,7 @@ export function placeAutomaticLabels({
     minY: rect.y - margin, maxY: rect.y + rect.height + margin,
   });
   const masksRoute = rect => {
+    if (arrows.some(arrow => rectsOverlap(rect, arrow, 4))) return true;
     for (const segment of segmentsNear(rect, 4)) {
       if (segment.relationIndex === rect.relationIndex) continue;
       if (segmentRectClearanceWithin(segment, rect, 4) + 0.0001 < 4) return true;
@@ -49,7 +51,7 @@ export function placeAutomaticLabels({
     && !overlapsLabel(rect, index, 2) && !masksRoute(rect)
   );
   const rectAt = (label, lx, ly) => ({
-    ...label, lx, ly, x: lx - label.width / 2, y: ly - 10,
+    ...label, lx, ly, x: lx - label.width / 2, y: ly - (label.baselineOffset ?? 10),
   });
   // An opted-in grid layout runs parallel lines through shared gaps. Rank
   // every position along all of the label's own segments: beside the line
@@ -108,6 +110,19 @@ export function placeAutomaticLabels({
   for (const [index, label] of placed.entries()) {
     const relation = label.relation;
     if (['labelAt', 'labelDx', 'labelDy', 'labelSegment'].some(key => relation[key] !== undefined)) continue;
+    if (arrows.some(arrow => rectsOverlap(label, arrow, 4))) {
+      const collidingArrows=arrows.filter(arrow=>rectsOverlap(label,arrow,4));
+      const offsets=[-4,-8,-12,4,8,12,...collidingArrows.flatMap(arrow=>[
+        arrow.y-4-label.y-label.height-0.01,
+        arrow.y+arrow.height+4-label.y+0.01,
+      ])];
+      const nearby = offsets.map(dy => rectAt(label, label.lx, label.ly + dy))
+        .find(rect => inside(rect) && rect.y + rect.height <= placementBottom
+          && !components.some(component => rectsOverlap(rect, component, -2))
+          && !titles.some(title => rectsOverlap(rect, title))
+          && !overlapsLabel(rect, index, 2) && !masksRoute(rect));
+      if (nearby) { placed[index] = nearby; continue; }
+    }
     // Match actual defect thresholds before searching; a valid placement is
     // not a reason to restyle the diagram. New placements leave extra space.
     // The grid ranking already starts from the preferred position, so it

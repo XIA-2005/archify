@@ -15,6 +15,7 @@ Relationship labels carry meaning. Give them clear space and preserve action, pr
 Place Architecture nodes by their actual connections before assigning coordinates; the router cannot rearrange boxes, so placement decides whether lines stay straight. Classify each relationship first, then place:
 
 - **Main path**: the reader's main journey, neighbors adjacent in reading order. Let a medium path step through meaningful rows instead of making a shallow horizontal strip.
+- **Visual rhythm**: for 8+ modules, prefer 2–3 balanced rows of coherent stages rather than one very wide row plus isolated bottom nodes. Keep physical output modules near their drivers; avoid a far-away actuator connection stretching across unrelated stages. A long feedback loop deserves its own clear corridor, not an arbitrary empty band. Aim for comparable whitespace above and below the actual content. Preserve every genuine relationship rather than hiding edges to make the image appear simpler.
 - **Branch or store**: directly above or below the node that owns, reads, or writes it, centered on that node so the edge is one straight segment. Keep all stores and branches of one row on the same side of it.
 - **Return** (back to an earlier main-path node): put its source on the side of the main path with no branches or stores, so it runs through an empty corridor instead of crossing them.
 - **Second entrance** into a node that already has an incoming edge: place the new source so it reaches that node from another side, usually directly below or above it.

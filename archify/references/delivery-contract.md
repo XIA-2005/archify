@@ -1,5 +1,15 @@
 # Delivery contract
 
+## Local mandatory editor handoff
+
+For this user's installation, the mandatory rule in `SKILL.md` overrides the
+upstream optional capture policy below. Every generation uses
+`editor/deliver.mjs`: one original finalize, real captures, and a matching live
+editor verified against the frozen source hash. Every Architecture requires
+image inspection. A screenshot receipt remains pending until images are read;
+it never certifies polish. The standalone CLI contracts below remain unchanged
+for programmatic consumers. See [Visual acceptance](visual-acceptance.md).
+
 ## Failed finalize and candidate repair
 
 `finalize` stops at the first non-passing gate. Use compact stdout or `evidence.summaryReceipt`; read its full sidecar only when the summary lacks evidence needed for a coherent repair. A receipt with four artifact checks is basic validation, not showcase acceptance: require all nine checks, zero composition errors, and zero warnings. Fix `meta.quality_profile` and schema errors before geometry.

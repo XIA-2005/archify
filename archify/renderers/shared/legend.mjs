@@ -46,6 +46,7 @@ export function resolveLegend(config, catalog, presentKinds) {
     return [{
       ...catalogEntry,
       label: override.label || catalogEntry.label,
+      ...(override.font_size == null ? {} : { font_size: override.font_size }),
       present: present.has(catalogEntry.kind),
       interactive: catalogEntry.interactive !== false && present.has(catalogEntry.kind),
     }];
@@ -77,7 +78,7 @@ export function legendFootprint(entries, {
   }
   const measured = entries.map((entry) => ({
     ...entry,
-    width: measuredEntryWidth(entry, fontSize, entry.swatchGap ?? swatchGap),
+    width: measuredEntryWidth(entry, entry.font_size ?? fontSize, entry.swatchGap ?? swatchGap),
   }));
   const rows = [[]];
   let cursor = 0;
@@ -97,7 +98,9 @@ export function legendFootprint(entries, {
     rows,
     rowCount: rows.length,
     minWidth: measured.reduce((width, entry) => Math.max(width, entry.width), 0),
-    extraHeight: (rows.length - 1) * lineGap,
+    lineGap: Math.max(lineGap, ...entries.map(entry => (entry.font_size || 0) * 1.3 + 4)),
+    extraHeight: (rows.length - 1) * Math.max(lineGap, ...entries.map(entry => (entry.font_size || 0) * 1.3 + 4))
+      + Math.max(0, ...entries.map(entry => (entry.font_size || 0) - 10)),
   };
 }
 
@@ -113,6 +116,7 @@ export function measureLegend(entries, {
   obstacles = [],
   unfit = 'error',
   diagramType = 'diagram',
+  titleFontSize,
 } = {}) {
   if (!entries.length) return { entries: [], rowCount: 0, titleY: null };
   const footprint = legendFootprint(entries, { width, fontSize, itemGap, lineGap, swatchGap });
@@ -130,8 +134,8 @@ export function measureLegend(entries, {
     }]);
   }
 
-  const titleY = baselineY - footprint.extraHeight - 20;
-  const legendTopY = titleY - 10;
+  const titleY = baselineY - footprint.extraHeight - Math.max(20, (titleFontSize || 0) * 0.3 + 14);
+  const legendTopY = titleY - (titleFontSize ?? 10);
   if (legendTopY < minTitleY) {
     if (unfit === 'hide') return null;
     const message = `[legend/vertical-overflow] ${diagramType} legend needs ${footprint.rowCount} rows, which would start at y=${legendTopY} above the available legend band at y=${minTitleY}.`;
@@ -148,7 +152,7 @@ export function measureLegend(entries, {
   const positioned = [];
   footprint.rows.forEach((row, rowIndex) => {
     let entryX = x;
-    const baseline = baselineY - (footprint.rowCount - rowIndex - 1) * lineGap;
+    const baseline = baselineY - (footprint.rowCount - rowIndex - 1) * (footprint.lineGap || lineGap);
     for (const entry of row) {
       positioned.push({ ...entry, x: entryX, baseline, row: rowIndex });
       entryX += entry.width + itemGap;
@@ -156,13 +160,13 @@ export function measureLegend(entries, {
   });
 
   const legendRects = [
-    { kind: 'title', x, y: legendTopY, width: 48, height: 14 },
+    { kind: 'title', x, y: legendTopY, width: Math.max(48, (titleFontSize || 0) * 4), height: Math.max(14, (titleFontSize || 0) * 1.3) },
     ...positioned.map((entry) => ({
       kind: entry.kind,
       x: entry.x,
-      y: entry.baseline - 10,
+      y: entry.baseline - (entry.font_size ?? 10),
       width: entry.width,
-      height: 14,
+      height: Math.max(14, (entry.font_size || 0) * 1.3),
     })),
   ];
   const collision = legendRects.find((legendRect) => obstacles.some((obstacle) => (
@@ -200,7 +204,7 @@ export function renderLegend({ entries, layout, renderSwatch, locale }) {
   const rootAttributes = hasInteractiveEntries ? ' data-legend="" data-legend-bridge=""' : ' data-legend=""';
   const parts = [
     `        <g${rootAttributes}>`,
-    `          <text x="${layout.x}" y="${measured.titleY}" class="t-primary" font-size="12" font-weight="650">${esc(translateMessage(locale, 'legend.title'))}</text>`,
+    `          <text x="${layout.x}" y="${measured.titleY}" class="t-primary" font-size="${layout.titleFontSize ?? 12}" font-weight="650">${esc(translateMessage(locale, 'legend.title'))}</text>`,
   ];
 
   for (const entry of measured.entries) {
@@ -209,7 +213,7 @@ export function renderLegend({ entries, layout, renderSwatch, locale }) {
       : '';
     parts.push(`          <g data-legend-semantic-kind="${esc(entry.kind)}"${interactive} data-legend-x="${entry.x}" data-legend-baseline="${entry.baseline}" data-legend-width="${entry.width}">`);
     parts.push(`            ${renderSwatch(entry)}`);
-    parts.push(`            <text x="${entry.x + (entry.swatchWidth ?? 14) + (entry.swatchGap ?? DEFAULT_SWATCH_GAP)}" y="${entry.baseline}" class="t-muted" font-size="${renderedFontSize}" font-weight="500">${esc(entry.label)}</text>`);
+    parts.push(`            <text x="${entry.x + (entry.swatchWidth ?? 14) + (entry.swatchGap ?? DEFAULT_SWATCH_GAP)}" y="${entry.baseline}" class="t-muted" font-size="${entry.font_size ?? renderedFontSize}" font-weight="500">${esc(entry.label)}</text>`);
     parts.push('          </g>');
   }
   parts.push('        </g>');

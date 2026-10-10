@@ -33,13 +33,11 @@ const finalizeSection = delivery.match(/For the ordinary agent handoff path[\s\S
 const browserSection = delivery.match(/## Automated browser evidence[\s\S]*?## Optional capture evidence/)?.[0] ?? '';
 const perceptualReviewSection = delivery.match(/## Perceptual review[\s\S]*?## Handoff receipt/)?.[0] ?? '';
 
-test('ordinary handoff uses one deterministic finalizer without image capability', () => {
+test('local handoff wraps one deterministic finalizer with required editor and captures', () => {
   assert.ok(skill.indexOf('## Existing candidate handoff') < skill.indexOf('## Fast authoring path'));
-  assert.match(skill, /run `finalize` first as one CLI invocation/);
-  assert.match(skill, /passing receipt completes the automated gates; follow any visual review recommendation/i);
-  assert.match(skill, /archify\.mjs finalize <type> <candidate\.json> <output\.html> --quality showcase --json/);
-  assert.match(skill, /When the user supplies a frozen candidate[\s\S]*?run `finalize` first as one CLI invocation/);
-  assert.match(skill, /Once the complete first candidate is written, run `finalize` directly\. Its first gate is showcase validation/);
+  assert.match(skill, /editor\/deliver\.mjs/);
+  assert.match(skill, /Do not run a second `finalize` for those same unchanged bytes/);
+  assert.match(skill, /verifies HTTP 200 plus the exact candidate hash/);
   assert.doesNotMatch(skill, /node bin\/archify\.mjs deliver <type> <candidate\.json> <output\.html>/);
 
   assert.match(finalizeSection, /`browser-check --require-provenance`/);
@@ -80,10 +78,10 @@ test('strict provenance succeeds before either browser command', () => {
   assert.match(skill, /captures require strict provenance/);
 });
 
-test('perceptual review is optional for fresh architectures and available for visual diagnosis', () => {
+test('local Architecture perceptual review is mandatory without self-certified polish', () => {
   assert.match(perceptualReviewSection, /visual_review: not_requested/);
   assert.match(perceptualReviewSection, /Ordinary generation does not require screenshots/);
-  assert.match(skill, /Perceptual review is optional for ordinary generation/);
+  assert.match(skill, /Perceptual review is \*\*required for every Architecture\*\*/);
   assert.match(perceptualReviewSection, /user explicitly requests an aesthetic or visual review/i);
   assert.match(perceptualReviewSection, /template, renderer, or Viewer change/i);
   assert.match(perceptualReviewSection, /novel layout or browser diagnostic leaves low confidence/i);
@@ -91,7 +89,7 @@ test('perceptual review is optional for fresh architectures and available for vi
   assert.match(perceptualReviewSection, /run `visual-check`[\s\S]*contact sheet/i);
   assert.match(perceptualReviewSection, /never exceed two focused correction rounds/i);
   assert.match(perceptualReviewSection, /Never report\s+`visual_review: passed` without inspecting/i);
-  assert.match(skill, /Inspect captures before claiming visual quality; otherwise report automated checks only/);
+  assert.match(skill, /Inspect the images before claiming visual acceptance/);
   assert.match(perceptualReviewSection, /visual_review: skipped \(image reader unavailable\)[\s\S]*requested or triggered review could not run/i);
   assert.match(perceptualReviewSection, /visualReviewRecommendation/);
   assert.match(delivery, /Open the HTML contact sheet in a browser or inspect the viewport PNGs/i);

@@ -463,3 +463,4 @@ Using Archify, sharing it, reporting bugs, and contributing improvements are als
 ## Star History
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/tt-a1i/archify/star-history/assets/star-history-dark.svg" /><img alt="Star History" src="https://raw.githubusercontent.com/tt-a1i/archify/star-history/assets/star-history-light.svg" /></picture></p>
+> **Customized fork:** this branch requires a matching **Archify · 可视化编辑器** for every generated diagram. It restores node dragging, text/connection editing, undo/redo, draft image export and mandatory Architecture screenshot review. See [customization notes](archify/LOCAL_CUSTOMIZATION.md) and [editor documentation](archify/editor/README.md). Upstream installation links below still refer to the original project; use this branch's package for these additions.

@@ -50,8 +50,9 @@ test('visual-check stays a pending sidecar receipt instead of a polish claim', (
     path.join(skillRoot, 'references', 'delivery-contract.md'),
     'utf8',
   );
-  assert.match(skill, /Optional capture evidence\]\(references\/delivery-contract\.md#optional-capture-evidence\)/);
-  assert.match(skill, /Inspect captures before claiming visual quality; otherwise report automated checks only/);
+  assert.match(skill, /Perceptual review is \*\*required for every Architecture\*\*/);
+  assert.match(skill, /Inspect the images before claiming visual acceptance/);
+  assert.match(skill, /editor\/deliver\.mjs/);
   assert.match(skill, /references\/delivery-contract\.md/);
   assert.match(deliveryContract, /Both browser commands inspect the exact delivered HTML without modifying or rerendering it/);
 

@@ -154,8 +154,8 @@
       "engineeringProfile": "deployment-ownership",
       "nodeCount": 12,
       "edgeCount": 12,
-      "artifactBytes": 770497,
-      "artifactSha256": "78642d7f08ef0c56031efd83bfd444227ca1c258463ae3fd12d684deaa551e59",
+      "artifactBytes": 771063,
+      "artifactSha256": "4e2f5c5c10d7c3dc555c95b545fb2c21bb27c1a8d8c4105a4c5515c10c2caf78",
       "sourceBytes": 4734,
       "sourceSha256": "cb54bad2dfd0c2d02aa5b496bde6839789a0f07f23062343c4458b8d38806c13",
       "checks": [
@@ -1479,8 +1479,8 @@
       "engineeringProfile": null,
       "nodeCount": 10,
       "edgeCount": 9,
-      "artifactBytes": 762310,
-      "artifactSha256": "8233f4f600c89559b64ac650ad11b66ee1423103e8b6c5e53f63740afc06f6da",
+      "artifactBytes": 762624,
+      "artifactSha256": "947619c3df95709ddb72410dc9bb53c39173c8d1aeaf1c9109ac1bb2f1d63a24",
       "sourceBytes": 3197,
       "sourceSha256": "95e051b27a9e4a3307e194c0f666fca4af51470be7e2228d400ff48aea5b353b",
       "checks": [

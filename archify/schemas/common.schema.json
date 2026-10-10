@@ -3,6 +3,19 @@
   "$id": "https://github.com/tt-a1i/archify/schemas/common.schema.json",
   "title": "Archify Shared Definitions",
   "$defs": {
+    "fontSize": { "type": "number", "minimum": 6, "maximum": 72, "multipleOf": 0.5 },
+    "fontSizes": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "label": { "$ref": "#/$defs/fontSize" },
+        "sublabel": { "$ref": "#/$defs/fontSize" },
+        "tag": { "$ref": "#/$defs/fontSize" },
+        "title": { "$ref": "#/$defs/fontSize" },
+        "subtitle": { "$ref": "#/$defs/fontSize" },
+        "legend_title": { "$ref": "#/$defs/fontSize" },
+        "items": { "type": "array", "items": { "anyOf": [{ "$ref": "#/$defs/fontSize" }, { "type": "null" }] } }
+      }
+    },
     "id": {
       "type": "string",
       "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$"
@@ -109,6 +122,7 @@
       "minProperties": 1,
       "properties": {
         "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "font_size": { "$ref": "#/$defs/fontSize" },
         "visible": { "type": "boolean" }
       }
     },
@@ -170,6 +184,7 @@
         "properties": {
           "dot": { "enum": ["cyan", "emerald", "violet", "amber", "rose", "orange", "slate"] },
           "title": { "type": "string", "minLength": 1 },
+          "font_sizes": { "$ref": "#/$defs/fontSizes" },
           "items": {
             "type": "array",
             "items": { "type": "string" }

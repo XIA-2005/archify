@@ -12,6 +12,7 @@ import { translateMessage as i18nText } from '../shared/i18n.mjs';
 import { gridLayout, resolveComponentPos, validateGridPlacement } from './grid.mjs';
 import { createRouter } from './routing.mjs';
 import { placeAutomaticLabels, reservedLabelRect } from './labels.mjs';
+import { textSize, componentTextGeometry, labelGeometry, arrowBounds } from '../shared/text-style.mjs';
 import { cleanRouteDetourProblems } from '../shared/route-quality.mjs';
 import {
   asArray,
@@ -56,6 +57,15 @@ const { diagram: arch, template, outPath, sourceEvidence } = await loadDiagramWi
 });
 
 const grid = gridLayout(arch);
+// Optional diagram-wide controls; omitted fields preserve upstream appearance.
+const fontScale = arch.meta?.font_scale ?? 1;
+const lineScale = arch.meta?.line_scale ?? 1;
+const arrowScale = lineScale * (arch.meta?.arrow_scale ?? 1);
+// Preserve the upstream default geometry. Expanded collision bounds belong to
+// explicit editor styling, not to every unmodified upstream diagram.
+const styledGeometry = arch.meta?.font_scale !== undefined
+  || arch.meta?.line_scale !== undefined || arch.meta?.arrow_scale !== undefined
+  || asArray(arch.connections).some(conn => conn.font_sizes?.label !== undefined);
 
 const layout = {
   defaultW: 120,
@@ -65,10 +75,10 @@ const layout = {
   // (CHANGELOG v2.2.1): 30px on top/left/right, plus 20px extra at the bottom.
   boundaryPad: 30,
   boundaryExtraBottom: 20,
-  boundaryLabelBaseline: 18,
+  boundaryLabelBaseline: 18 * fontScale,
   boundaryLabelClearance: 4,
-  boundaryLabelFontPreferred: 9,
-  boundaryLabelFontMinimum: 6,
+  boundaryLabelFontPreferred: 9 * fontScale,
+  boundaryLabelFontMinimum: Math.max(6, 6 * fontScale),
   boundaryLabelMaskHeight: 16,
   boundaryLabelRailGap: 2,
   boundaryLabelFrameInset: 4,
@@ -160,8 +170,11 @@ function connectionLabelBox(conn) {
 }
 
 function connectionLabelBoxAt(conn, [lx, ly]) {
-  const width = Math.max(30, textUnits(conn.label) * 4.8 + 10);
-  return { x: lx - width / 2, y: ly - 10, width, height: 14, lx, ly };
+  if (!styledGeometry) {
+    const width = Math.max(30, textUnits(conn.label) * 4.8 + 10);
+    return { x: lx - width / 2, y: ly - 10, width, height: 14, lx, ly };
+  }
+  return labelGeometry(conn.label, textSize(conn, 'label', 8 * fontScale), [lx, ly]);
 }
 
 function connectionLabelRects() {
@@ -227,7 +240,7 @@ function measureBoundaryTitle(boundary, minimumFontSize) {
     ? (availableWidth - 10) / (units * 0.6)
     : layout.boundaryLabelFontPreferred;
   const preferredFontSize = Math.max(layout.boundaryLabelFontPreferred, minimumFontSize);
-  const fontSize = Math.max(
+  const fontSize = boundary.font_sizes?.label ?? Math.max(
     minimumFontSize,
     Math.min(preferredFontSize, fitted),
   );
@@ -244,7 +257,7 @@ function measureBoundaryTitle(boundary, minimumFontSize) {
     minimumFontSize,
     baselineOffset: fontSize + 4,
     availableWidth,
-    minimumWidth: boundaryLabelWidth(boundary.label, minimumFontSize),
+    minimumWidth: boundaryLabelWidth(boundary.label, boundary.font_sizes?.label ?? minimumFontSize),
   };
 }
 
@@ -406,10 +419,13 @@ const legendY = () => viewBox[1] - 16;
 // Fit titles and canvas from the original geometry first. Fallback labels must
 // fit inside that canvas, so moving a label cannot trigger title reflow or a
 // canvas/label feedback loop. Keep standard and every authored label control.
-if (arch.meta?.quality_profile === 'showcase') {
+const arrowObstacles = (styledGeometry ? asArray(arch.connections) : []).filter(conn => components.has(conn.from) && components.has(conn.to))
+  .map(conn => ({ ...arrowBounds(pathFor(conn).points, arrowScale), relation: conn }));
+if (arch.meta?.quality_profile === 'showcase' || styledGeometry) {
   connectionLabels = placeAutomaticLabels({
     keepFallbackNearRoute: true,
     labels: connectionLabels,
+    arrows: arrowObstacles,
     routes: asArray(arch.connections).flatMap((conn, relationIndex) => (
       components.has(conn.from) && components.has(conn.to)
         ? [{ relationIndex, points: pathFor(conn).points }] : []
@@ -457,18 +473,20 @@ function validateArchitecture() {
     if (c.x < 0 || c.y < 0 || c.x + c.width > viewBox[0] || c.y + c.height > viewBox[1]) {
       problems.push(`Component "${c.id}" falls outside the viewBox ${viewBox[0]}x${viewBox[1]} — adjust pos/size or set a larger meta.viewBox.`);
     }
-    const estLabelW = textUnits(c.label) * 6.6;
+    const textLayout = componentTextGeometry({ ...c, pos: [c.x, c.y], size: [c.width, c.height] }, fontScale);
+    if (textLayout.requiredHeight > c.height) problems.push(`Component "${c.id}" needs height ${Math.ceil(textLayout.requiredHeight)}px for its font_sizes; increase size or reduce font sizes.`);
+    const estLabelW = textUnits(c.label) * (c.font_sizes?.label ?? 11 * fontScale) * 0.6;
     if (estLabelW > c.width + 8) {
       problems.push(`Label "${c.label}" (~${Math.round(estLabelW)}px) is wider than component "${c.id}" (${c.width}px) — shorten the label or widen size.`);
     }
-    const brandRailProblem = brandTopRailProblem(c, c.width, 8, 'Component');
+    const brandRailProblem = brandTopRailProblem(c, c.width, 8 * fontScale, 'Component');
     if (brandRailProblem) problems.push(brandRailProblem);
     // sublabel and tag render as single unwrapped <text> elements; shrink-to-fit
     // handles the ordinary case, this rejects what it cannot rescue.
     const availableTextW = availableNodeTextWidth(c.width);
     for (const [field, value, minimum] of [
-      ['Sublabel', c.sublabel, componentTextFit.sublabelMinimum],
-      ['Tag', c.tag, componentTextFit.tagMinimum],
+      ['Sublabel', c.sublabel, c.font_sizes?.sublabel ?? Math.max(6, componentTextFit.sublabelMinimum * fontScale)],
+      ['Tag', c.tag, c.font_sizes?.tag ?? Math.max(6, componentTextFit.tagMinimum * fontScale)],
     ]) {
       if (!value) continue;
       const minimumW = minimumNodeTextWidth(value, minimum);
@@ -750,8 +768,25 @@ function validateArchitecture() {
   }));
 
   // Connection labels must not land on top of components.
+  for (const arrow of arrowObstacles) {
+    if (arrow.x >= 0 && arrow.y >= 0 && arrow.x + arrow.width <= viewBox[0] && arrow.y + arrow.height <= viewBox[1]) continue;
+    const message = `[composition/arrow-outside-canvas] Arrow of "${arrow.relation.id || arrow.relation.from}" exceeds the canvas; reduce arrow_scale or line_scale, or move the nodes to leave room.`;
+    problems.push(message);
+    diagnostics.push({ code: 'composition/arrow-outside-canvas', severity: 'error', message,
+      subject: { diagramType: 'architecture', collection: 'connections', id: arrow.relation.id },
+      evidence: { arrow, viewBox }, supportedFixes: ['reduce meta.arrow_scale', 'reduce meta.line_scale', 'move nodes to leave room'] });
+  }
   const labelRects = connectionLabels;
   for (const rect of labelRects) {
+    for (const arrow of arrowObstacles) {
+      if (!rectsOverlap(rect, arrow, 4)) continue;
+      const message = `[composition/label-arrow-overlap] Label "${rect.label}" overlaps the arrow of "${arrow.relation.id || arrow.relation.from}"; move labelAt or reduce its font size to leave 4px clearance.`;
+      problems.push(message);
+      diagnostics.push({ code: 'composition/label-arrow-overlap', severity: 'error', message,
+        subject: { diagramType: 'architecture', collection: 'connections', id: rect.relation.id },
+        evidence: { label: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }, arrow, clearancePx: 4 },
+        supportedFixes: ['move labelAt away from the arrow', 'reduce font_sizes.label'] });
+    }
     const blockedComponents = [...components.values()].filter(c => rectsOverlap(rect, c, -2));
     const labelPinned = ['labelAt', 'labelDx', 'labelDy', 'labelSegment'].some(key => rect.relation[key] !== undefined);
     const points = pathFor(rect.relation).points;
@@ -816,7 +851,7 @@ function buildLayoutReport() {
     x: Math.round(rect.x),
     y: Math.round(rect.y),
     width: Math.round(rect.width),
-    height: 14,
+    height: Math.round(rect.height),
     labelAt: [Math.round(rect.lx), Math.round(rect.ly)],
   }));
   return {
@@ -841,7 +876,7 @@ function buildLayoutReport() {
 function renderBoundaryFrame(b, index) {
   const cls = b.kind === 'security-group' ? 'c-security-group' : 'c-region';
   const rx = b.kind === 'security-group' ? 8 : 12;
-  return `        <rect data-graph-role="structural-frame" data-composition-frame-kind="${esc(b.kind || 'boundary')}" data-composition-frame-id="${index}" data-composition-frame-label="${esc(b.label)}" x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" rx="${rx}" class="${cls}" stroke-width="1"/>`;
+  return `        <rect data-graph-role="structural-frame" data-composition-frame-kind="${esc(b.kind || 'boundary')}" data-composition-frame-id="${index}" data-composition-frame-label="${esc(b.label)}" x="${b.x}" y="${b.y}" width="${b.width}" height="${b.height}" rx="${rx}" class="${cls}" stroke-width="${lineScale}"/>`;
 }
 
 function renderBoundaryLabel(b, index) {
@@ -855,10 +890,10 @@ function renderBoundaryLabel(b, index) {
 function renderConnectionPath(conn, index) {
   const [cls, marker] = arrowClassMap[conn.variant || 'default'] || arrowClassMap.default;
   const routed = pathFor(conn);
-  const strokeWidth = conn.width || (conn.variant === 'emphasis' ? 1.8 : 1.5);
+  const strokeWidth = (conn.width || (conn.variant === 'emphasis' ? 1.8 : 1.5)) * lineScale;
   const automaticRoute = hasAutomaticRouteGeometry(conn);
   const underlay = automaticRoute
-    ? `          <path data-graph-role="automatic-crossover-underlay" d="${routed.d}" fill="none" stroke="var(--mask)" stroke-width="${strokeWidth + 4}" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>\n`
+    ? `          <path data-graph-role="automatic-crossover-underlay" d="${routed.d}" fill="none" stroke="var(--mask)" stroke-width="${strokeWidth + 4 * lineScale}" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>\n`
     : '';
   const crossover = automaticRoute
     ? ` data-composition-crossover="halo"${conn.labelAt ? '' : ' data-composition-independent="true"'}` : '';
@@ -874,29 +909,30 @@ function renderConnectionLabel(conn, index) {
   if (!box) return '';
   return `        <g data-detail="context" ${focusEdgeAttrs(conn.from, conn.to, conn.label, index, conn.id)}>
           <rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" rx="3" class="c-mask"/>
-          <text x="${box.lx}" y="${box.ly}" class="${edgeLabelAccent(conn.variant)}" font-size="8" text-anchor="middle">${esc(conn.label)}</text>
+          <text x="${box.lx}" y="${box.ly}" class="${edgeLabelAccent(conn.variant)}" font-size="${textSize(conn, 'label', 8 * fontScale)}" text-anchor="middle">${esc(conn.label)}</text>
         </g>`;
 }
 
 function renderComponent(c) {
+  const geometry = componentTextGeometry({ ...c, pos: [c.x, c.y], size: [c.width, c.height] }, fontScale);
   const fill = componentFill[c.type] || 'c-external';
   const accent = componentText[c.type] || 't-muted';
   const cx = c.cx;
   const hasSub = c.sublabel != null && c.sublabel !== '';
-  const labelY = hasSub ? c.y + c.height / 2 - 2 : c.y + c.height / 2 + 4;
+  const labelY = geometry.ys.label;
   const sub = hasSub
-    ? `\n        <text data-detail="context" x="${cx}" y="${c.y + c.height / 2 + 14}" class="t-muted" font-size="${fittedNodeFontSize(c.sublabel, c.width, componentTextFit.sublabelPreferred, componentTextFit.sublabelMinimum)}" text-anchor="middle">${esc(c.sublabel)}</text>`
+    ? `\n        <text data-detail="context" data-text-field="sublabel" x="${cx}" y="${geometry.ys.sublabel}" class="t-muted" font-size="${geometry.sizes.sublabel}" text-anchor="middle">${esc(c.sublabel)}</text>`
     : '';
   const tag = c.tag
-    ? `\n        <text data-detail="fine" x="${cx}" y="${c.y + c.height - 8}" class="${accent}" font-size="${fittedNodeFontSize(c.tag, c.width, componentTextFit.tagPreferred, componentTextFit.tagMinimum)}" text-anchor="middle">${esc(c.tag)}</text>`
+    ? `\n        <text data-detail="fine" data-text-field="tag" x="${cx}" y="${geometry.ys.tag}" class="${accent}" font-size="${geometry.sizes.tag}" text-anchor="middle">${esc(c.tag)}</text>`
     : '';
   const brand = renderBrandMark(c, { x: c.x + c.width - 22, y: c.y + 6 });
-  const labelFontSize = fittedNodeFontSize(c.label, brandLabelFitWidth(c, c.width), 11, 8);
+  const labelFontSize = c.font_sizes?.label ?? fittedNodeFontSize(c.label, brandLabelFitWidth(c, c.width), 11 * fontScale, 8 * fontScale);
   const passport = { kind: c.type, sublabel: c.sublabel, tag: c.tag, context: componentContext(c), ...brandMetadataFor(c) };
   return `        <g ${focusNodeAttrs(c.id, c.label, passport, arch.meta.locale)}>
           ${focusNodeTitle(c.label, passport)}
           <rect x="${c.x}" y="${c.y}" width="${c.width}" height="${c.height}" rx="6" class="c-mask"/>
-          <rect x="${c.x}" y="${c.y}" width="${c.width}" height="${c.height}" rx="6" class="${fill}"${animateAttr(arch.meta, 'node', componentSteps.get(c.id))} stroke-width="1.5"/>
+          <rect x="${c.x}" y="${c.y}" width="${c.width}" height="${c.height}" rx="6" class="${fill}"${animateAttr(arch.meta, 'node', componentSteps.get(c.id),lineScale!==1?`stroke-width:${1.5*lineScale}px !important`:'')} stroke-width="${1.5 * lineScale}"/>
           ${renderSemanticSigil(c.type, { icon: c.icon, x: c.x + 6, y: c.y + 6 })}${brand ? `\n          ${brand}` : ''}
           <text data-node-label=""${hasSub ? ' data-detail-anchor=""' : ''} x="${cx}" y="${labelY}" class="t-primary" font-size="${labelFontSize}" font-weight="600" text-anchor="middle">${esc(c.label)}</text>${sub}${tag}
         </g>`;
@@ -919,6 +955,7 @@ function renderLegend() {
     entries,
     locale: arch.meta.locale,
     layout: {
+      titleFontSize: arch.meta.font_sizes?.legend_title,
       x: layout.margin,
       baselineY: legendY(),
       width: viewBox[0] - layout.margin * 2,
@@ -947,7 +984,7 @@ function renderSvg() {
   const readerPrimaryText = arch.meta?.viewBox ? '' : ' data-reader-primary-text="14"';
   return `      <svg viewBox="0 0 ${viewBox[0]} ${viewBox[1]}" ${svgRootAttrs(arch.meta)}${readerFit}${readerMinimumText}${readerPrimaryText}>
 ${svgAccessibleText(arch.meta, 'architecture')}
-${renderDefinitions()}
+${renderDefinitions({ fixedArrows: styledGeometry, clipArrows: true, arrowScale })}
 
         <!-- Background Grid -->
         <rect width="100%" height="100%" fill="url(#grid)" />
