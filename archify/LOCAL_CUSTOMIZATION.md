@@ -32,7 +32,7 @@ Codex 加载 `<installed-skill>/archify`。检查时，该目录的 SKILL、默�
 - 标题、副标题、图例标题与输出校验标准默认收进折叠区。输出校验标准不控制导出分辨率。
 - 包含 Architecture draft 入口及分组标题独立偏移支持；原有正式验证、视觉验收、HTML/JSON/本地编辑器双交付要求保留。
 
-本分支的 `archify/` 目录是当前定制 Skill 源码。根目录 `archify.zip` 仍是官方包，不包含本次定制；本次没有发布 Release、版本标签或替换官方 ZIP，也没有更新其他 live 安装。生成的 Viewer 模板、示例和图库已更新。安装或同步应明确选择此分支，避免误用仓库默认 main 或官方 ZIP。
+本分支的 `archify/` 目录是当前定制 Skill 源码。根目录 `archify.zip` 仍是官方包，不包含本次定制；本次没有发布 Release、版本标签或替换官方 ZIP，也没有更新其他 live 安装。生成的 Viewer 模板、示例和图库已更新。本版现已合并到 XIA-2005/archify 的 main；安装或同步应明确选择该定制仓库，避免误用上游官方来源或官方 ZIP。
 
 ### 上传前验证
 

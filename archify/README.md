@@ -1,8 +1,8 @@
 # Archify 定制增强版
 
-这一版基于 [tt-a1i/archify](https://github.com/tt-a1i/archify) 的 `54edef453ca3fc495f488c30de97eaea0c789f19`，在原版图表生成、验证和独立 HTML Viewer 上，扩展了**可视化编辑、透明背景导出、PPT 动图和高分辨率导出**。这是 XIA-2005 的定制分支，保留原作者与 MIT 许可证。
+这一版基于 [tt-a1i/archify](https://github.com/tt-a1i/archify) 的 `54edef453ca3fc495f488c30de97eaea0c789f19`，在原版图表生成、验证和独立 HTML Viewer 上，扩展了**可视化编辑、透明背景导出、PPT 动图和高分辨率导出**。这是 XIA-2005 的定制仓库，保留原作者与 MIT 许可证。
 
-**当前版本位置：** [`feat/export-and-editor-usability` 分支](https://github.com/XIA-2005/archify/tree/feat/export-and-editor-usability)，Skill 内容就是本目录。仓库默认 `main`、官方安装来源和根目录 `archify.zip` 不包含这版全部增强功能。请使用此分支的源码；本次未发布新的 Release 或 ZIP。
+**当前版本位置：** [本仓库 `main` 分支](https://github.com/XIA-2005/archify/tree/main)，Skill 内容就是本目录。上游官方安装来源和根目录 `archify.zip` 不包含这版全部增强功能。请使用本仓库 `main` 的源码；本次未发布新的 Release 或 ZIP。
 
 ## 与原版相比，更新了什么
 
@@ -22,7 +22,7 @@
 | 分组标题独立偏移 | 增加分组标题位置调整，边框和连线路径不随标题一起移动 | 给标题避让空间，保持系统分组与连接关系 |
 | Architecture draft 入口 | 增加从语义输入生成布局候选的入口，候选仍须经过正式验证和视觉验收 | 辅助生成第一版布局，不以自动布局替代最终审查 |
 
-这张表包括此前的可视化编辑扩展，以及本分支新增的导出和易用性改进；并非所有能力都由最后一个提交单独引入。
+这张表包括此前的可视化编辑扩展，以及本仓库新增的导出和易用性改进；并非所有能力都由最后一个提交单独引入。
 
 ## 怎么使用这些新增功能
 
@@ -48,4 +48,4 @@
 
 上传前已通过 Viewer 模板生成一致性、golden 检查、26 项真实浏览器导出检查、33 项国际化检查、8 项 draft/分组标题检查，以及编辑器主题与八类悬停高亮的浏览器验证。编辑器浅色/深色与悬停效果已人工查看。
 
-这些是本版相关功能的验证结果，不代表完整仓库测试或远程 CI 全部通过。当前分支提供源码与更新后的模板/示例；官方 ZIP 未重新打包。详细记录见 [LOCAL_CUSTOMIZATION.md](LOCAL_CUSTOMIZATION.md)。
+这些是本版相关功能的验证结果，不代表完整仓库测试或远程 CI 全部通过。当前 main 提供源码与更新后的模板/示例；官方 ZIP 未重新打包。详细记录见 [LOCAL_CUSTOMIZATION.md](LOCAL_CUSTOMIZATION.md)。

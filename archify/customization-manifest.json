@@ -165,7 +165,7 @@
       "path": "editor/deliver.mjs"
     },
     {
-      "sha256": "7df2e4267ed92a03206b1c3239505e03906554ba63612403349c95522901a190",
+      "sha256": "782f8777938a1800bc77d5685a9aeb03485e52f703f7d3d0facaee52e9d3cdec",
       "path": "LOCAL_CUSTOMIZATION.md"
     },
     {
@@ -274,7 +274,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "678263d25257e2eaf90f5b43b6845cc561a43b7eebb8ec06d33a43248f3f6b5d"
+      "sha256": "2e1eb9362ef529c895e5cc59b04589b75929c7b1866a5242b68f3a72b513f0c6"
     }
   ],
   "requiredEditor": "Archify · 可视化编辑器"
