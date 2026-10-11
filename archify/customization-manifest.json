@@ -271,6 +271,10 @@
     {
       "path": "test/layout-rules.test.mjs",
       "sha256": "b745b6bc9797ba9fccf973c0c7ba06cefa37c854054e4f572691f932ae4a1e02"
+    },
+    {
+      "path": "README.md",
+      "sha256": "678263d25257e2eaf90f5b43b6845cc561a43b7eebb8ec06d33a43248f3f6b5d"
     }
   ],
   "requiredEditor": "Archify · 可视化编辑器"

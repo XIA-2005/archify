@@ -1,3 +1,11 @@
+> **Customized Archify fork — export and visual editor enhancements**
+>
+> This branch adds a local visual editor, editable connection labels, batch font controls with hover highlighting, editor light/dark themes, collapsible settings, selectable transparent exports, looping GIF for presentations, and 1×–4× raster/animation export scale. It keeps the upstream renderer and validation workflow.
+>
+> **[Read the feature comparison and usage guide (中文)](archify/README.md).** This customized Skill is in `archify/` on `feat/export-and-editor-usability`. The default `main`, official install source and existing `archify.zip` do not contain all of these enhancements. The upstream introduction below is retained for attribution and reference.
+
+---
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/archify-lockup-dark.svg" />

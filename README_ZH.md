@@ -1,3 +1,11 @@
+> **Archify 定制增强版：可视化编辑与导出改进**
+>
+> 本分支增加本地可视化编辑器、连线文字编辑、批量字号及悬停高亮、编辑器浅色模式、低频设置折叠，以及可选透明背景、PPT 用循环 GIF 和 1×–4× 导出放大倍率。
+>
+> **[查看与原版的功能对比、使用方法和限制](archify/README.md)。** 定制 Skill 位于 `feat/export-and-editor-usability` 分支的 `archify/`。默认 `main`、官方安装来源与现有 `archify.zip` 不包含本版全部增强功能。下方保留原版介绍和官方入口，供参考。
+
+---
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/archify-lockup-dark.svg" />
