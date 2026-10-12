@@ -448,5 +448,7 @@
   "viewer.export.scale.hint": "기본: 이미지 4×, 애니메이션 최대 너비 1280px. SVG는 벡터 유지.",
   "viewer.export.error.scale": "1×에서 4× 사이의 배율을 선택하세요",
   "viewer.export.error.scaleTooLarge": "내보내기 크기 제한을 초과했습니다. 더 낮은 배율을 선택하세요.",
-  "viewer.export.error.gifRequirements": "GIF 내보내기에는 다이어그램 연결과 브라우저 Canvas 지원이 필요합니다"
+  "viewer.export.error.gifRequirements": "GIF 내보내기에는 다이어그램 연결과 브라우저 Canvas 지원이 필요합니다",
+  "viewer.export.gifFps": "GIF 프레임 속도",
+  "viewer.export.gifFps.hint": "프레임 속도가 높을수록 움직임이 부드럽고 파일이 커집니다. GIF 시간 간격은 10ms 단위입니다."
 }

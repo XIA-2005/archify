@@ -138,6 +138,7 @@
           "from": { "$ref": "common.schema.json#/$defs/id" },
           "to": { "$ref": "common.schema.json#/$defs/id" },
           "label": { "type": "string" },
+          "labelColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Explicit connection label color; omit to follow the theme." },
           "font_sizes": { "$ref": "common.schema.json#/$defs/fontSizes" },
           "variant": { "$ref": "common.schema.json#/$defs/variant" },
           "fromSide": { "$ref": "common.schema.json#/$defs/side" },

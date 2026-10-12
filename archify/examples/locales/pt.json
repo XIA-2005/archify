@@ -433,5 +433,7 @@
   "viewer.export.scale.hint": "Padrão: imagens 4×, animação até 1280px; SVG vetorial.",
   "viewer.export.error.scale": "Escolha uma escala de 1× a 4×",
   "viewer.export.error.scaleTooLarge": "Esta escala excede o limite de tamanho. Escolha uma escala menor.",
-  "viewer.export.error.gifRequirements": "A exportação GIF requer conexões e suporte Canvas no navegador"
+  "viewer.export.error.gifRequirements": "A exportação GIF requer conexões e suporte Canvas no navegador",
+  "viewer.export.gifFps": "Taxa de quadros GIF",
+  "viewer.export.gifFps.hint": "Taxas mais altas tornam a animação mais fluida e o arquivo maior. GIF usa intervalos de 10 ms."
 }
