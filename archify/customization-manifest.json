@@ -1,11 +1,11 @@
 {
   "upstreamCommit": "54edef453ca3fc495f488c30de97eaea0c789f19",
-  "date": "2026-10-11",
+  "date": "2026-10-12",
   "source": "archify",
   "schemaVersion": 1,
   "files": [
     {
-      "sha256": "2853466486f2d1aac79edabcecd687afaf5b50e829c399da13e5bbe8fbc383a3",
+      "sha256": "132ffbbd63812f3aed8f2ca613b44f405bc0867517d9357b39d21274e91a68de",
       "path": "SKILL.md"
     },
     {
@@ -21,7 +21,7 @@
       "path": "editor/benchmark-routes.mjs"
     },
     {
-      "sha256": "ae2b4a64bd5038842d38bbeb29f789dec9cb2a82eb742b0483cf30aa4227e9e2",
+      "sha256": "e6c6877cbe12a5811e9ebc1c88a048c3042ccce88e96fdfdbc9659da1e8317c6",
       "path": "editor/editor.html"
     },
     {
@@ -33,7 +33,7 @@
       "path": "editor/orthogonal-tools.mjs"
     },
     {
-      "sha256": "26d549c67bd69f20ee1992011bfec4df174f046b780de01fa75c298a8730a57e",
+      "sha256": "fba5959d600b24f19b70356e2d1f9760e570792338541e95ff7ce5c386a78c30",
       "path": "editor/README.md"
     },
     {
@@ -81,7 +81,7 @@
       "path": "editor/test-font-drag.mjs"
     },
     {
-      "sha256": "a3fca1bf43de6c9d5b8584579edd0c40965ce72661dd5058838a500770b5c10c",
+      "sha256": "22a3fe616f59f84189994e1b88eb098338343eb982fdfb83fdc07da41df81aab",
       "path": "editor/test-interaction.mjs"
     },
     {
@@ -117,7 +117,7 @@
       "path": "renderers/architecture/labels.mjs"
     },
     {
-      "sha256": "813b6bb59fbb00c1c2a9aa3eb82c7415a3c3fcc03219d10efa05dd6b406d50d4",
+      "sha256": "1ccb269e18821f390ac990fa7cf15d2dc89f08821c569c1356ca2d1ca1543741",
       "path": "renderers/architecture/render-architecture.mjs"
     },
     {
@@ -125,7 +125,7 @@
       "path": "renderers/shared/cli.mjs"
     },
     {
-      "sha256": "634eb315afdf6679d202183e4d4506ec27ca13dfcf8d943a2ae0f4ac2ce9683b",
+      "sha256": "e41616b24ccbbf72b1e85f0d6561931adf9470ff7a604d3308c96ce37bfa12c7",
       "path": "renderers/shared/generated-validators.mjs"
     },
     {
@@ -145,7 +145,7 @@
       "path": "renderers/shared/validator.mjs"
     },
     {
-      "sha256": "8600638d9a1d93119c83e767c273bef4f8ca42681edb91749c134a2d8eea711c",
+      "sha256": "f513f8fa95db275f82b1524b6f4c9157441cf56a0a23ae3f7705cb3478e2403f",
       "path": "schemas/architecture.schema.json"
     },
     {
@@ -169,27 +169,27 @@
       "path": "LOCAL_CUSTOMIZATION.md"
     },
     {
-      "sha256": "ce06f47acdae3cf3ab7d2fce69ff4773b523cf5ff7f59b5b6f2188bad1412392",
+      "sha256": "9b2488b9d9fb4336a15d7931332394b756602af18e13174c449735a6491d67d7",
       "path": "assets/template.html"
     },
     {
-      "sha256": "bc4c27f6bc8e8e60ec404c43b56a24cc2d94e4a0376ae3f97b9d77fdb44f3dad",
+      "sha256": "1f9cc06602dad17c7aecca1626815df358f13aa3bdcaac12becc9ab57b5cd6da",
       "path": "examples/dataflow-product-analytics.html"
     },
     {
-      "sha256": "a52a83109682f45e73fb689c9c0bcafa473456ffa57cb8bab5eaefece5cbb3cb",
+      "sha256": "1fa344fe9466df5b8d9c635b9bde7c1181569a1123c3e322ec1dade31ad9e193",
       "path": "examples/lifecycle-agent-run.html"
     },
     {
-      "sha256": "890efe71c07a87c28838480141ad0b3e3db130091f76d087e8adfb30e0d56aec",
+      "sha256": "a9ea99d13f1b7d5a07daca973cd907569271ff7185bd222ade812bf96e2118fc",
       "path": "examples/sequence-cache-miss-request.html"
     },
     {
-      "sha256": "c35479c3d6e507ab5dab9ee5244d52b3368d5dacfab2dc8af638bfd96455411d",
+      "sha256": "f8184d36d1feac102d140676fc096df503f05f1b401536a1219e2ba57507f4ed",
       "path": "examples/web-app-rendered.html"
     },
     {
-      "sha256": "0f1acb7ad6349fd693e5f0d20042bd2e45c7af4ec97e863d8774325162035821",
+      "sha256": "cc10a4865b6de01438bbb928e8631d2c688e76ee875956992d73331b4de59f3d",
       "path": "examples/workflow-agent-tool-call-rendered.html"
     },
     {
@@ -198,11 +198,11 @@
     },
     {
       "path": "renderers/shared/i18n.mjs",
-      "sha256": "f8fdf88ed70c1a60c93805e13f3a3b0c8d3013b552cf27ac80ceb0ea7d0564cd"
+      "sha256": "8543fa9a702ad156c2bb8b813dbc757c71d557a5944d2dec72465b9aa5ae6b55"
     },
     {
       "path": "test/export-browser.test.mjs",
-      "sha256": "0cc5e8faff6e4a1b216dba7bb677f60ba6c57d5e04e44943d16b790b434bb15b"
+      "sha256": "1a45b76c6e70e463ef88928cd056e00d575cf89a1afa6fbb163d6cc6383ce55f"
     },
     {
       "path": "test/export-cleanup-browser.test.mjs",
@@ -210,35 +210,35 @@
     },
     {
       "path": "examples/locales/de.json",
-      "sha256": "32ae73553ef872e1d476dc2b32ffc43dd15acb375d67d1c06384f38df2b0651c"
+      "sha256": "093ebd45e2fc515e5460095faaebfb5d5472619c7a3d54064e87311ffc4cb195"
     },
     {
       "path": "examples/locales/es.json",
-      "sha256": "3bbe11699f6ac9fbb64f169061d1cc479cc353552ba6824be6556151bccf3c75"
+      "sha256": "46992862610c911573ac9d170d962c58153aa3ee71e4c18e7e8976944d4c68d3"
     },
     {
       "path": "examples/locales/fr.json",
-      "sha256": "fb2e9582fccff25279a5279c3e649de0419114585fec15b16764f36f0693da26"
+      "sha256": "11df22387635dad0e2e485d5a709324da6c3636032398446ad3397b7598333f4"
     },
     {
       "path": "examples/locales/it.json",
-      "sha256": "b3c8c4b53f2ffab19a7afb64b94e365e7882ae0b1366c63a4cbaea57108b5b83"
+      "sha256": "f35a95966734eaa621348912db807327d823892efbd02b8713867532ffeb105b"
     },
     {
       "path": "examples/locales/ja.json",
-      "sha256": "0765837390fa9eb23505cbcdf29c041ba996250a729db5c5cf3405d2223cf568"
+      "sha256": "8dcd64754bc647955649671c6cba828783fa237b960f05b4b8c3f70f18b6db3b"
     },
     {
       "path": "examples/locales/ko.json",
-      "sha256": "c7a3950c729cce5e1c5b3d775f100fd489ec6ef5c0f41847ff57383aab868678"
+      "sha256": "5bf6eda7cb4bdd108550df232da627c4d763595c78ffd77d9c502869d8b1d331"
     },
     {
       "path": "examples/locales/pt.json",
-      "sha256": "a86c482ae7a4f750fe8bbd3a336bea5851b02a0e2306aaaf96f62b4f5b99b9d3"
+      "sha256": "15cc0622207688bf4a4d7355e52d94f784a8bb0215f65d3dcc208a990153534d"
     },
     {
       "path": "examples/locales/ru.json",
-      "sha256": "cddf3ed698c5c36722ceffc0e3d31744f4fe31841bf252fb008f8ee3def50953"
+      "sha256": "84d581c8f23e758fe1cb386a0384c843ee8e02589f3ed72e08013d00a5da0908"
     },
     {
       "path": "bin/archify.mjs",
@@ -274,7 +274,11 @@
     },
     {
       "path": "README.md",
-      "sha256": "2e1eb9362ef529c895e5cc59b04589b75929c7b1866a5242b68f3a72b513f0c6"
+      "sha256": "5a6233440db6b0f38fca6158346521874fea7fd2095a9df687a8954000483834"
+    },
+    {
+      "path": "editor/test-label-color.mjs",
+      "sha256": "94b483ae4d0253bf7a0ab48ab0dd5425acef4069ef6a3497ae841922767eab5e"
     }
   ],
   "requiredEditor": "Archify · 可视化编辑器"

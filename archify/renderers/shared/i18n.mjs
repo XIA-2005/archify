@@ -157,6 +157,8 @@ const MESSAGE_PAIRS = {
   'viewer.export.error.gifRequirements': ['GIF motion export requires diagram connections and browser Canvas support', 'GIF 动图导出需要图表连线及浏览器 Canvas 支持'],
   'viewer.export.background': ['Background', '背景'],
   'viewer.export.scale': ['Export scale', '导出放大倍数'],
+  'viewer.export.gifFps': ['GIF frame rate', 'GIF 帧率'],
+  'viewer.export.gifFps.hint': ['Higher frame rates give smoother motion and larger files. GIF timing uses 10 ms steps.', '帧率越高，动画越流畅，文件也越大。GIF 帧间隔以 10 毫秒为单位。'],
   'viewer.export.scale.auto': ['Default', '默认'],
   'viewer.export.scale.hint': ['PNG / JPEG / WebP / GIF / WebM · Default: images 4×, motion up to 1280px. SVG stays vector.', 'PNG / JPEG / WebP / GIF / WebM · 默认图片 4×，动图宽度适配 1280px；SVG 保持矢量。'],
   'viewer.export.error.scale': ['Choose an export scale from 1× to 4×', '请选择 1× 至 4× 的导出倍率'],

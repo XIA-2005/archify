@@ -433,5 +433,7 @@
   "viewer.export.scale.hint": "Par défaut : images 4×, animation jusqu’à 1280px ; SVG vectoriel.",
   "viewer.export.error.scale": "Choisir une échelle de 1× à 4×",
   "viewer.export.error.scaleTooLarge": "Cette échelle dépasse la taille limite. Choisir une échelle inférieure.",
-  "viewer.export.error.gifRequirements": "L’export GIF nécessite des connexions et la prise en charge de Canvas"
+  "viewer.export.error.gifRequirements": "L’export GIF nécessite des connexions et la prise en charge de Canvas",
+  "viewer.export.gifFps": "Fréquence d’images GIF",
+  "viewer.export.gifFps.hint": "Une fréquence élevée rend l’animation plus fluide et le fichier plus volumineux. GIF utilise des pas de 10 ms."
 }

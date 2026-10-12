@@ -488,9 +488,39 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
     assert.deepEqual(cleanup, { message: 'alpha configure fault', closed: 2, revoked: true, errors: [] });
   });
 
+  await t.test('GIF menu frame rate changes decoded frames and preserves duration, transparency and keyboard selection', async () => {
+    await load({theme:'light'});
+    await run('Archify.exportMenu.open()');
+    await click('[data-action="transparent-background"]');
+    assert.equal(await run('document.getElementById("export-gif-fps").value'), '12');
+    for (const [index, fps] of [12,24,30,50].entries()) {
+      await run('Archify.exportMenu.open();document.getElementById("export-gif-fps").focus()');
+      await key('Home', 'Home', 36);
+      for(let step=0;step<index;step++)await key('ArrowDown', 'ArrowDown', 40);
+      assert.equal(await run('document.activeElement.id'), 'export-gif-fps');
+      assert.equal(await run('document.getElementById("export-gif-fps").value'), String(fps));
+      await run(`Archify.exportMenu.run('gif',{duration:1000,scale:1})`);
+      const result=await run(`(async()=>{
+        const decoder=new ImageDecoder({data:await exportDownloads.at(-1).blob.arrayBuffer(),type:'image/gif'});
+        await decoder.tracks.ready;const count=decoder.tracks.selectedTrack.frameCount;
+        const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');let duration=0,blankPainted=0;
+        for(let i=0;i<count;i++){
+          const {image}=await decoder.decode({frameIndex:i});duration+=image.duration;
+          canvas.width=image.displayWidth;canvas.height=image.displayHeight;ctx.drawImage(image,0,0);image.close();
+          const blank=ctx.getImageData(0,0,100,30).data;for(let p=3;p<blank.length;p+=4)if(blank[p])blankPainted++;
+        }
+        decoder.close();return {count,duration,blankPainted};
+      })()`);
+      assert.equal(result.count,fps);assert.equal(result.duration,1000000);assert.equal(result.blankPainted,0);
+    }
+    await run(`Archify.exportMenu.run('gif',{duration:1000,fps:8,scale:1})`);
+    assert.equal(await run(`(async()=>{const d=new ImageDecoder({data:await exportDownloads.at(-1).blob.arrayBuffer(),type:'image/gif'});await d.tracks.ready;const n=d.tracks.selectedTrack.frameCount;d.close();return n;})()`),8,'explicit API fps overrides menu selection');
+    await record('gif-frame-rates');
+  });
+
   await t.test('GIF decodes looping motion and binary transparency without MediaRecorder or trace mode', async () => {
-    for (const transparent of [false,true]) {
-      await load({theme:transparent?'light':'dark'});
+    for (const [transparent,theme] of [[false,'dark'],[false,'light'],[true,'dark'],[true,'light']]) {
+      await load({theme});
       const result=await run(`(async()=>{
         window.MediaRecorder=undefined;
         const svg=document.querySelector('.diagram-container svg');svg.removeAttribute('data-animation');
@@ -501,22 +531,27 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
         await decoder.tracks.ready;
         const count=decoder.tracks.selectedTrack.frameCount,loop=decoder.tracks.selectedTrack.repetitionCount;
         const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
-        let first,changed=0,transparent=0,opaque=0,duration=0;
+        let first,changed=0,transparent=0,opaque=0,duration=0,blankPainted=0;
         for(let i=0;i<count;i++){
           const {image}=await decoder.decode({frameIndex:i});duration+=image.duration;
           canvas.width=image.displayWidth;canvas.height=image.displayHeight;ctx.drawImage(image,0,0);image.close();
           const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+          // A transparent corner alone misses a grid baked into the canvas.
+          // This empty strip crosses grid lines; check it in every decoded frame.
+          const blank=ctx.getImageData(0,0,100,30).data;
+          for(let p=3;p<blank.length;p+=4)if(blank[p])blankPainted++;
           if(!first){first=pixels;for(let p=3;p<pixels.length;p+=4){if(pixels[p]===0)transparent++;if(pixels[p]===255)opaque++;}}
           else if(i===count-1)for(let p=0;p<pixels.length;p++)if(pixels[p]!==first[p])changed++;
         }
-        decoder.close();return {count,loop:loop===Infinity?'infinite':loop,duration,changed,transparent,opaque,size:blob.size,type:blob.type};
+        decoder.close();return {count,loop:loop===Infinity?'infinite':loop,duration,changed,transparent,opaque,blankPainted,size:blob.size,type:blob.type};
       })()`);
       assert.equal(result.count,6);assert.equal(result.loop,'infinite');
       assert.equal(result.duration,500000);assert.ok(result.changed>10,JSON.stringify(result));
       assert.ok(result.opaque>100);assert.equal(result.type,'image/gif');
       assert.ok(transparent?result.transparent>100:result.transparent===0,JSON.stringify(result));
-      assert.ok((await record('gif-'+transparent)).urls.every(u=>u.revoked));
-      if(evidence){const bytes=await run(`gifBlob.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,transparent?'transparent.gif':'opaque.gif'),Buffer.from(bytes));}
+      if(transparent)assert.equal(result.blankPainted,0,'transparent GIF paints its empty canvas');
+      assert.ok((await record('gif-'+transparent+'-'+theme)).urls.every(u=>u.revoked));
+      if(evidence){const bytes=await run(`gifBlob.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,(transparent?'transparent':'opaque')+'-'+theme+'.gif'),Buffer.from(bytes));}
     }
     await load();await run('Archify.exportMenu.open()');await click('[data-format="gif"]');
     await run('exportWait(()=>exportDownloads.length===1)');

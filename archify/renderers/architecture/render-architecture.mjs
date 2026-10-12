@@ -909,7 +909,7 @@ function renderConnectionLabel(conn, index) {
   if (!box) return '';
   return `        <g data-detail="context" ${focusEdgeAttrs(conn.from, conn.to, conn.label, index, conn.id)}>
           <rect x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" rx="3" class="c-mask"/>
-          <text x="${box.lx}" y="${box.ly}" class="${edgeLabelAccent(conn.variant)}" font-size="${textSize(conn, 'label', 8 * fontScale)}" text-anchor="middle">${esc(conn.label)}</text>
+          <text x="${box.lx}" y="${box.ly}" class="${edgeLabelAccent(conn.variant)}"${conn.labelColor ? ` style="fill:${esc(conn.labelColor)} !important"` : ''} font-size="${textSize(conn, 'label', 8 * fontScale)}" text-anchor="middle">${esc(conn.label)}</text>
         </g>`;
 }
 

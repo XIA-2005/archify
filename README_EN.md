@@ -2,7 +2,7 @@
 >
 > This fork adds a local visual editor, editable connection labels, batch font controls with hover highlighting, editor light/dark themes, collapsible settings, selectable transparent exports, looping GIF for presentations, and 1×–4× raster/animation export scale. It keeps the upstream renderer and validation workflow.
 >
-> **[Read the feature comparison and usage guide (中文)](archify/README.md).** This customized Skill is in `archify/` on this repository’s `main` branch. The upstream official install source and existing `archify.zip` do not contain all of these enhancements. The upstream introduction below is retained for attribution and reference.
+> **[Read the feature comparison and usage guide (中文)](archify/README.md).** This customized Skill is in `archify/` on this repository’s `main` branch. This fork’s rebuilt `archify.zip` contains its customized Skill; the upstream official install source remains separate. The upstream introduction below is retained for attribution and reference.
 
 ---
 

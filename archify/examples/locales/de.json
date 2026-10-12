@@ -433,5 +433,7 @@
   "viewer.export.scale.hint": "Standard: Bilder 4×, Animation bis 1280px; SVG bleibt Vektor.",
   "viewer.export.error.scale": "Exportmaßstab zwischen 1× und 4× wählen",
   "viewer.export.error.scaleTooLarge": "Dieser Maßstab überschreitet die Exportgröße. Kleineren Maßstab wählen.",
-  "viewer.export.error.gifRequirements": "GIF-Animation benötigt Diagrammverbindungen und Canvas-Unterstützung im Browser"
+  "viewer.export.error.gifRequirements": "GIF-Animation benötigt Diagrammverbindungen und Canvas-Unterstützung im Browser",
+  "viewer.export.gifFps": "GIF-Bildrate",
+  "viewer.export.gifFps.hint": "Höhere Bildraten ergeben flüssigere Animationen und größere Dateien. GIF-Zeiten verwenden 10-ms-Schritte."
 }

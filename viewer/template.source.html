@@ -266,6 +266,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           </select>
           <small id="export-scale-hint" class="hint">{{i18n:viewer.export.scale.hint}}</small>
         </div>
+        <div class="export-menu-section export-resolution" role="group" aria-label="{{i18n:viewer.export.gifFps}}">
+          <label for="export-gif-fps">{{i18n:viewer.export.gifFps}}</label>
+          <select id="export-gif-fps" aria-describedby="export-gif-fps-hint">
+            <option value="12">12 FPS</option><option value="24">24 FPS</option><option value="30">30 FPS</option><option value="50">50 FPS</option>
+          </select>
+          <small id="export-gif-fps-hint" class="hint">{{i18n:viewer.export.gifFps.hint}}</small>
+        </div>
         <div class="export-menu-section" role="group" aria-label="{{i18n:viewer.export.raster}}">
           <span class="export-menu-heading" aria-hidden="true">{{i18n:viewer.export.image}}</span>
           <button data-format="png" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>PNG</strong><small class="hint">{{i18n:viewer.export.lossless}}</small></span></button>

@@ -865,7 +865,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
         svgEl('rect',{x:box.x,y:box.y,width:box.width,height:box.height,
           rx:box.rx,fill:'none','pointer-events':'all','data-label-background':'transparent','data-edge-label-edit':id},group);
         text(svgEl('text',{x:box.textX,y:box.textY,'text-anchor':'middle',
-          'font-size':box.fontSize,'font-weight':600,fill:emphasis?editorColor('#70deaf'):editorColor('#dceaff'),
+          'font-size':box.fontSize,'font-weight':600,fill:e.labelColor||(emphasis?editorColor('#70deaf'):editorColor('#dceaff')),
           'pointer-events':'all','data-edge-label-edit':id,tabindex:0,role:'button',
           'aria-label':'编辑连线文字：'+e.label,style:'cursor:pointer'},group),e.label);
         if (selectedEdge) {
@@ -1145,6 +1145,19 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
         dom('h3','', '连接：'+(e.id||selected.id),panel);
         property('连线文字',e.label||'',v=>e.label=v).dataset.edgeLabelInput='true';
         fontProperty('连线文字字号',e,'label',8);
+        const colorField=property('连线文字颜色',e.labelColor||'',v=>{
+          const color=v.trim();
+          if(!color){delete e.labelColor;return;}
+          if(!/^#[0-9a-fA-F]{6}$/.test(color))throw Error('颜色应为 #RRGGBB，例如 #263238；留空恢复主题默认。');
+          e.labelColor=color.toLowerCase();
+        });
+        colorField.dataset.edgeLabelColor='true';colorField.placeholder='主题默认（#RRGGBB）';
+        const colorPicker=dom('input','',null,colorField.parentElement);
+        colorPicker.type='color';colorPicker.value=e.labelColor||'#263238';colorPicker.dataset.edgeLabelColorPicker='true';
+        colorPicker.setAttribute('aria-label','选择连线文字颜色');
+        colorPicker.onchange=()=>{colorField.value=colorPicker.value;colorField.dispatchEvent(new Event('change',{bubbles:true}));};
+        const resetColor=dom('button','', '恢复默认',colorField.parentElement);resetColor.type='button';
+        resetColor.onclick=()=>{colorField.value='';colorField.dispatchEvent(new Event('change',{bubbles:true}));};
         property('路由模式',e.route||'auto',v=>e.route=v,'select',
           ['auto','straight','orthogonal-h','orthogonal-v']);
         const sides=['auto','left','right','top','bottom'];
