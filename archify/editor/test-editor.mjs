@@ -157,11 +157,6 @@ try {
   updated.meta.title+=' · 编辑器集成测试';
   updated.components[0].font_sizes={label:10,sublabel:9};
   updated.meta.line_scale=1.3;
-  // This integration fixture deliberately enables enlarged style geometry.
-  // Let automatic labels repair it; authored pins are separately covered by
-  // test-text-geometry and test-font-drag and must not be silently rewritten.
-  for (const edge of updated.connections)
-    for (const key of ['labelAt','labelDx','labelDy','labelSegment']) delete edge[key];
   const saved=await send({expectedHash:original.expectedHash,candidate:updated});
   assert.equal(saved.status,200,'save failed: '+JSON.stringify(saved));
   assert.equal(saved.body.ok,true);

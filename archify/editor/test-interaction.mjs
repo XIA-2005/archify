@@ -47,6 +47,8 @@ try{
   ws=new WebSocket(tab.webSocketDebuggerUrl);
   ws.addEventListener('message',e=>{const d=JSON.parse(e.data);if(d.id&&pending.has(d.id)){const v=pending.get(d.id);pending.delete(d.id);v.resolve(d);}});
   await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true})});
+  // Browser regression exports inspect Blob content; never download into the user's profile.
+  await call('Browser.setDownloadBehavior',{behavior:'deny'});
   await call('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
   await waitFor(async()=>await evaluate(`document.querySelectorAll('[data-node-id]').length`)===source.components.length);
   await waitFor(async()=>await evaluate(`document.querySelectorAll('[data-rendered-route]').length`)===source.connections.length);
@@ -129,6 +131,25 @@ try{
     assert.equal(draft.connections[labeledIndex].font_sizes.label,editedFont);
     assert.equal(draft.connections[labeledIndex].from,originalEdge.from);
     assert.equal(draft.connections[labeledIndex].to,originalEdge.to);
+    await evaluate(`(()=>{const color=document.querySelector('[data-edge-label-color-picker]');color.value='#cc2244';color.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+    await waitFor(async()=>await routeReady(source.connections.length)&&await evaluate(`document.querySelector(${JSON.stringify(labelSelector)})?.getAttribute('fill')==='#cc2244'`),20000);
+    const coloredDraft=await evaluate(`(async()=>{const create=URL.createObjectURL;let blob;URL.createObjectURL=value=>{blob=value;return create(value);};try{document.getElementById('export').click();}finally{URL.createObjectURL=create;}return JSON.parse(await blob.text());})()`);
+    assert.equal(coloredDraft.connections[labeledIndex].labelColor,'#cc2244');
+    assert.equal(coloredDraft.connections[labeledIndex].from,originalEdge.from);
+    assert.equal(coloredDraft.connections[labeledIndex].to,originalEdge.to);
+    assert.deepEqual(coloredDraft.connections[labeledIndex].via,originalEdge.via);
+    const initialSave=await (await fetch(base+'api/spec')).json();
+    const colorSave=await fetch(base+'api/save',{method:'POST',headers:{'content-type':'application/json','x-archify-editor':'1',origin:new URL(base).origin},body:JSON.stringify({candidate:coloredDraft,expectedHash:initialSave.expectedHash})});
+    const colorReceipt=await colorSave.json();
+    assert.equal(colorSave.status,200,JSON.stringify(colorReceipt));
+    assert.equal(JSON.parse(fs.readFileSync(path.join(temp,'candidate.json'),'utf8')).connections[labeledIndex].labelColor,'#cc2244');
+    assert.ok(fs.readFileSync(path.join(temp,'diagram.html'),'utf8').includes('style="fill:#cc2244'));
+    console.log('PASS: label color saved through validate/finalize into JSON and HTML');
+    await evaluate(`document.getElementById('undo').click()`);
+    await waitFor(async()=>await evaluate(`document.querySelector(${JSON.stringify(labelSelector)})?.getAttribute('fill')!=='#cc2244'`));
+    await evaluate(`document.getElementById('redo').click()`);
+    await waitFor(async()=>await evaluate(`document.querySelector(${JSON.stringify(labelSelector)})?.getAttribute('fill')==='#cc2244'`));
+    await evaluate(`document.getElementById('undo').click()`);
     await evaluate(`document.getElementById('undo').click();document.getElementById('undo').click()`);
     await waitFor(async()=>await routeReady(source.connections.length)&&await evaluate(`document.querySelector(${JSON.stringify(labelSelector)})?.textContent===${JSON.stringify(originalEdge.label)}`));
     assert.equal(await evaluate(`Number(document.querySelector(${JSON.stringify(labelSelector)}).getAttribute('font-size'))`),originalFont);

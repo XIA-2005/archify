@@ -125,9 +125,9 @@ recordWebm retains duration/fps options, defaults, minimums, MIME selection,
 geometry-driven scene and encoder flush timing. This table describes existing
 paths; it does not add universal recovery from arbitrary browser API exceptions.
 
-GIF export creates a six-second loop at 12 fps, reusing the
+GIF export creates a six-second loop with a selectable 12 / 24 / 30 / 50 fps (default 12), reusing the
 selected export scale for native-resolution rendering. The scale selector offers
-Default / 1× / 2× / 3× / 4× for images, clipboard, GIF and WebM. Explicit scales
+Default / 1× / 3× / 5× / 7× / 10× for images, clipboard, GIF and WebM. Explicit scales
 use source SVG content units (raster figures include scaled titles/margins);
 Default keeps existing raster 4× and motion 1280px-fit behavior. `options.scale`
 also works through the export/motion APIs. Explicit exports exceeding 16 Mi pixels
@@ -138,7 +138,10 @@ WebM relationship-trace scene even for static diagrams. It uses an adaptive
 global 256-color palette, native GIF89a LZW compression and full-frame disposal
 to avoid motion trails on transparent slides. Background selection also applies
 to GIF; its transparency is binary (no partial alpha). `motion.recordGif` accepts
-duration/fps options bounded to 30 seconds/24 fps. Encoding yields between frames
+duration/fps options bounded to 30 seconds/50 fps. The menu's GIF frame-rate
+selection applies only to GIF; explicit API fps options override that selection.
+GIF frame delays use 10 ms units, so rates such as 24 and 30 use alternating
+delays to preserve total duration. Encoding yields between frames
 and releases its source URL on success or failure, with no external dependency.
 The Background menu checkbox defaults to off and stays selected for the current
 Viewer session. PNG, WebP and ordinary PNG clipboard copy accept the selection;

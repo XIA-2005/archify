@@ -236,6 +236,8 @@ A measurable rejected layout also returns these fields, with `ok: false`,
 repair evidence, not artifact acceptance; it writes no HTML. Malformed input or
 an implementation failure retains the ordinary failure receipt without layout.
 
+Architecture editor geometry: `boundaries[].bounds` optionally specifies authoritative `[x,y,width,height]` (nonnegative origin, positive dimensions); omit it for member-derived frames. Explicit frames do not auto-expand during title layout and remain subject to composition/containment checks. `connections[].fromPort` and `toPort` optionally pin normalized `[x,y]` attachment coordinates in `[0,1]` on their respective components. Preserve them together with explicit `via` and side direction when editing or repairing; removing only a side must not silently move a pinned endpoint. Old candidates omitting these fields retain the existing automatic geometry.
+
 Use the measured failing side for `layout/boundary-out-of-bounds`. Left/top
 negative coordinates need an inward move; increasing viewBox width/height only
 addresses right/bottom overflow. Boundaries may wrap members across rows. Keep

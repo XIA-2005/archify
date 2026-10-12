@@ -431,7 +431,9 @@
   "viewer.export.scale": "Scala di esportazione",
   "viewer.export.scale.auto": "Predefinita",
   "viewer.export.scale.hint": "Predefinito: immagini 4×, animazione fino a 1280px; SVG vettoriale.",
-  "viewer.export.error.scale": "Scegli una scala da 1× a 4×",
+  "viewer.export.error.scale": "Scegli una scala: 1×, 3×, 5×, 7× o 10×",
   "viewer.export.error.scaleTooLarge": "Questa scala supera il limite di dimensione. Scegli una scala inferiore.",
-  "viewer.export.error.gifRequirements": "L’esportazione GIF richiede connessioni e supporto Canvas nel browser"
+  "viewer.export.error.gifRequirements": "L’esportazione GIF richiede connessioni e supporto Canvas nel browser",
+  "viewer.export.gifFps": "Frequenza fotogrammi GIF",
+  "viewer.export.gifFps.hint": "Più fotogrammi rendono l’animazione più fluida e il file più grande. GIF usa intervalli di 10 ms."
 }

@@ -198,6 +198,21 @@ const server = http.createServer((req, res) => {
   if (req.method === 'GET' && (route === base || route === base + '/')) {
     return respond(res, 200, html, 'text/html; charset=utf-8');
   }
+  if (req.method === 'GET' && (route === base + '/drawio-frame.html'
+      || route === base + '/drawio-adapter.mjs' || route.startsWith(base + '/vendor/drawio/'))) {
+    const relative = route.slice(base.length + 1);
+    const file = path.resolve(editorDir, relative);
+    const vendorRoot = path.join(editorDir, 'vendor', 'drawio');
+    const permitted = relative === 'drawio-frame.html' || relative === 'drawio-adapter.mjs'
+      || (file.startsWith(vendorRoot + path.sep) && fs.existsSync(file)
+        && fs.realpathSync.native(file).startsWith(vendorRoot + path.sep));
+    if (!permitted || !fs.statSync(file, {throwIfNoEntry:false})?.isFile())
+      return json(res,404,{ok:false,message:'Not found'});
+    const mime = {'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript',
+      '.css':'text/css','.xml':'application/xml','.txt':'text/plain','.png':'image/png',
+      '.woff2':'font/woff2'}[path.extname(file)] || 'application/octet-stream';
+    return respond(res,200,fs.readFileSync(file),mime);
+  }
   if (req.method === 'GET' && route === base + '/orthogonal-tools.mjs') {
     return respond(res, 200, fs.readFileSync(path.join(editorDir, 'orthogonal-tools.mjs')),
       'text/javascript; charset=utf-8');

@@ -326,6 +326,7 @@ export function createRouter(components, connections = [], {
   function alignFacingPorts(conn, from, to, start, end, fromSide, toSide, ports) {
     const hasExplicitGeometry = (
       conn.via
+      || conn.fromPort || conn.toPort
       || (conn.route && conn.route !== 'auto')
       || conn.channelX !== undefined
       || conn.channelY !== undefined
@@ -761,10 +762,11 @@ export function createRouter(components, connections = [], {
     const inferred = inferredConnectionSides(conn);
     const { fromSide, toSide } = sides;
     const legacyPorts = fromSide === inferred.fromSide && toSide === inferred.toSide ? automaticPorts.get(conn) : null;
-    const source = distinctAutomaticPorts
+    const explicitPort = (rect, value) => ({point:[rect.x+value[0]*rect.width,rect.y+value[1]*rect.height],spread:true});
+    const source = conn.fromPort ? explicitPort(from,conn.fromPort) : distinctAutomaticPorts
       ? automaticEndpoint(conn, 'from', from, fromSide, inferred.fromSide)
       : { point: legacyPorts?.from || anchor(from, fromSide), spread: Boolean(legacyPorts?.from) };
-    const target = distinctAutomaticPorts
+    const target = conn.toPort ? explicitPort(to,conn.toPort) : distinctAutomaticPorts
       ? automaticEndpoint(conn, 'to', to, toSide, inferred.toSide)
       : { point: legacyPorts?.to || anchor(to, toSide), spread: Boolean(legacyPorts?.to) };
     const ports = { from: source.spread, to: target.spread };

@@ -1,3 +1,4 @@
+import { sourceGitEnvironment } from './helpers/source-index.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -10,7 +11,7 @@ function linguistGenerated(relativePath) {
   const output = execFileSync(
     'git',
     ['check-attr', 'linguist-generated', '--', relativePath],
-    { cwd: repoRoot, encoding: 'utf8' },
+    { cwd: repoRoot, env: {...process.env,...sourceGitEnvironment(repoRoot)}, encoding: 'utf8' },
   ).trim();
   return output.slice(output.lastIndexOf(':') + 1).trim();
 }

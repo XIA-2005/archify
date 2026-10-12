@@ -1,5 +1,16 @@
 # Third-party notices
 
+## draw.io native editing engine
+
+The Architecture editor includes unmodified browser assets from draw.io Desktop
+29.7.9, supplied from the user's local installation. These JGraph assets are
+licensed under Apache License 2.0; the full license is bundled at
+`editor/vendor/drawio/LICENSE`. The original library copyright and license
+comments in `app.min.js` are retained. `editor/vendor/drawio/SOURCE.json` records
+the source build and SHA-256 digest of every included asset. Archify's data
+adapter is separate from these assets; Archify's MIT license does not replace
+their licenses. No Electron binaries or unrelated desktop resources are bundled.
+
 Archify includes optional vector data for third-party brand marks. These marks
 are provided only to identify technologies and services in user-authored
 diagrams. Their inclusion does not imply sponsorship, endorsement, partnership,

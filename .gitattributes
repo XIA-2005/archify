@@ -18,3 +18,6 @@
 # Normalize line endings so working-tree bytes match the index on Windows (core.autocrlf=true).
 # See issue #144: tracked files materialized as CRLF on Windows, breaking byte-exact checks.
 * text=auto eol=lf
+
+# Keep the pinned draw.io distribution byte-for-byte so SOURCE.json hashes stay valid.
+/archify/editor/vendor/drawio/** -text

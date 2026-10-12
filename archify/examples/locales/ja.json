@@ -431,7 +431,9 @@
   "viewer.export.scale": "書き出し倍率",
   "viewer.export.scale.auto": "既定",
   "viewer.export.scale.hint": "既定：画像 4×、アニメーション幅 1280px まで。SVG はベクター。",
-  "viewer.export.error.scale": "1× ～ 4× の倍率を選択してください",
+  "viewer.export.error.scale": "書き出し倍率を 1×、3×、5×、7×、10× から選択してください",
   "viewer.export.error.scaleTooLarge": "書き出しサイズの上限を超えています。低い倍率を選択してください。",
-  "viewer.export.error.gifRequirements": "GIF アニメーションの書き出しには図の接続とブラウザーの Canvas 対応が必要です"
+  "viewer.export.error.gifRequirements": "GIF アニメーションの書き出しには図の接続とブラウザーの Canvas 対応が必要です",
+  "viewer.export.gifFps": "GIF フレームレート",
+  "viewer.export.gifFps.hint": "高いフレームレートほど動きが滑らかになり、ファイルも大きくなります。GIF の間隔は 10 ミリ秒単位です。"
 }

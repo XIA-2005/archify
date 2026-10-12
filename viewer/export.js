@@ -409,7 +409,9 @@
         if (opts.figure || opts.transparentBackground) bgRect.setAttribute('fill', 'none');
         if (opts.transparentBackground) {
           clone.style.setProperty('background', 'none', 'important');
-          if (opts.omitGrid) Array.prototype.forEach.call(clone.querySelectorAll('rect[fill="url(#grid)"]'), function (rect) { rect.remove(); });
+          // Every alpha-capable format uses this serializer. A transparent
+          // canvas must omit the grid too, including raster and motion exports.
+          Array.prototype.forEach.call(clone.querySelectorAll('rect[fill="url(#grid)"]'), function (rect) { rect.remove(); });
         }
 
         clone.insertBefore(style, clone.firstChild);
@@ -459,7 +461,7 @@
       function exportScale(options, fallback, width, height) {
         if (!options || options.scale == null || options.scale === 'auto') return fallback;
         var scale = Number(options.scale);
-        if ([1, 2, 3, 4].indexOf(scale) === -1) {
+        if ([1, 3, 5, 7, 10].indexOf(scale) === -1) {
           var invalid = exportError('viewer.export.error.scale'); invalid.archifyExportSize = true; throw invalid;
         }
         if (Math.ceil(width * scale) * Math.ceil(height * scale) > MAX_CANVAS_PIXELS ||
@@ -1038,7 +1040,7 @@
         }
         var duration = Math.max(250, Number(options.duration) || MOTION_DURATION);
         var fps = Math.max(1, Number(options.fps) || (format === 'gif' ? 12 : MOTION_FPS));
-        if (format === 'gif') { duration = Math.min(30000, duration); fps = Math.min(24, fps); }
+        if (format === 'gif') { duration = Math.min(30000, duration); fps = Math.min(50, fps); }
         var svg = document.querySelector('.diagram-container svg');
         var vb = svg.viewBox.baseVal;
         var scale;
@@ -1288,6 +1290,7 @@
       var reachShareItem = menu.querySelector('button[data-action="reach-share-card"]');
       var backgroundItem = menu.querySelector('[data-action="transparent-background"]');
       var scaleItem = document.getElementById('export-scale');
+      var gifFpsItem = document.getElementById('export-gif-fps');
       function backgroundOptions() {
         return { transparentBackground: backgroundItem.getAttribute('aria-checked') === 'true', scale: scaleItem.value };
       }
@@ -1407,7 +1410,7 @@
       menu.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') { e.preventDefault(); close(true); return; }
         if (e.key === 'Tab')    { close(false); return; }
-        if (e.target === scaleItem) return;
+        if (e.target === scaleItem || e.target === gifFpsItem) return;
 
         var available = items().filter(function (i) { return !i.hidden && !i.disabled; });
         var current = available.indexOf(document.activeElement);
@@ -1432,6 +1435,7 @@
       });
 
       function runExport(format, options) {
+        if (format === 'gif') options = Object.assign({ fps: Number(gifFpsItem.value) }, options || {});
         options = Object.assign(backgroundOptions(), options || {});
         if (['svg', 'svg-light', 'svg-dark', 'png', 'jpeg', 'webp', 'webm', 'gif'].indexOf(format) === -1) {
           return Promise.reject(exportError('viewer.export.unsupported'));
@@ -1445,7 +1449,7 @@
         if (format === 'webm') toast(viewerText('viewer.export.recording'));
         if (format === 'gif') toast(viewerText('viewer.export.encodingGif'));
         return (svgTheme
-          ? Promise.resolve(serializeSvg(1, { theme: svgTheme, transparentBackground: options.transparentBackground === true, omitGrid: options.transparentBackground === true })).then(function (d) {
+          ? Promise.resolve(serializeSvg(1, { theme: svgTheme, transparentBackground: options.transparentBackground === true })).then(function (d) {
               var blob = new Blob([d.svgString], { type: 'image/svg+xml;charset=utf-8' });
               recordExportReceipt('svg', blob, d.canonicalStateClean);
               download(blob, base + (svgTheme === 'auto' ? '' : '-' + svgTheme) + '.svg');

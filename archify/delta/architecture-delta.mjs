@@ -1306,7 +1306,12 @@ export function validateArchitectureDeltaHtml(html, receipt) {
   // escaped srcdoc script (for example, "safe scale" in image export code).
   const deltaShell = html.replace(/<iframe\b[^>]*><\/iframe>/g, '');
   if (/\b(?:SAFE|LOW RISK|MERGEABLE|NO IMPACT|VERIFIED PR)\b/i.test(deltaShell)) failures.push('contains a forbidden risk or mergeability claim');
-  if (/\b(?:NaN|Infinity)\b/.test(html)) failures.push('contains non-finite output');
+  // Check rendered geometry, not scripts or authored labels. Viewer code can
+  // legitimately use Infinity as an accumulator (including in iframe srcdoc).
+  const geometryAttributes = /\s(?:d|points|viewBox|transform|x|y|x1|x2|y1|y2|cx|cy|r|rx|ry|width|height|stroke-width|stroke-dasharray|stroke-dashoffset)="([^"]*)"/g;
+  const nonFiniteGeometry = [...deltaMarkup.matchAll(/<[a-z][\w:-]*\b[^>]*>/g)]
+    .some(([tag]) => [...tag.matchAll(geometryAttributes)].some(([, value]) => /\b(?:NaN|Infinity)\b/.test(value)));
+  if (nonFiniteGeometry) failures.push('contains non-finite output');
   if (receipt.completeness !== 'complete') failures.push('receipt is not complete');
   if (failures.length) fail('delta/artifact-invalid', `Architecture Delta artifact failed validation: ${failures.join('; ')}.`, { failures });
   return { ok: true, checksPassed: 10, checkCount: 10 };

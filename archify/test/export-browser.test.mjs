@@ -406,31 +406,62 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
 
   await t.test('native scale selection renders larger raster and GIF frames and preserves vector/size errors', async () => {
     await load();await run('Archify.exportMenu.open();document.getElementById("export-scale").focus()');
+    assert.deepEqual(await run('[...document.getElementById("export-scale").options].map(o=>o.value)'), ['auto','1','3','5','7','10']);
     await key('Home','Home',36);await key('ArrowDown','ArrowDown',40);await key('ArrowDown','ArrowDown',40);
-    assert.equal(await run('document.getElementById("export-scale").value'),'2');
+    assert.equal(await run('document.getElementById("export-scale").value'),'3');
     assert.equal(await run('Archify.exportMenu.isOpen()'),true);
     const vb=await run(`(()=>{const v=document.querySelector('.diagram-container svg').viewBox.baseVal;return {width:v.width,height:v.height};})()`);
     const dimensions={};
     for(const format of ['png','jpeg','webp']){
       dimensions[format]=[];
-      for(const scale of [1,2]){
+      for(const scale of [1,3]){
         await run(`Archify.exportMenu.run(${JSON.stringify(format)},{scale:${scale}})`);
         const size=await run(`createImageBitmap(exportDownloads.at(-1).blob).then(b=>{const r=[b.width,b.height];b.close();return r;})`);
         dimensions[format].push(size);
       }
-      assert.equal(dimensions[format][1][0],dimensions[format][0][0]*2);
-      assert.equal(dimensions[format][1][1],dimensions[format][0][1]*2);
+      assert.equal(dimensions[format][1][0],dimensions[format][0][0]*3);
+      assert.equal(dimensions[format][1][1],dimensions[format][0][1]*3);
     }
     await run(`Archify.exportMenu.run('gif',{duration:250,fps:8,transparentBackground:true})`);
     const gif=await run(`(async()=>{const blob=exportDownloads.at(-1).blob;window.scaledGif=blob;const decoder=new ImageDecoder({data:await blob.arrayBuffer(),type:'image/gif'});await decoder.tracks.ready;const {image}=await decoder.decode({frameIndex:0});const c=document.createElement('canvas');c.width=image.displayWidth;c.height=image.displayHeight;const x=c.getContext('2d');x.drawImage(image,0,0);const r={width:image.displayWidth,height:image.displayHeight,alpha:x.getImageData(10,10,1,1).data[3],frames:decoder.tracks.selectedTrack.frameCount};image.close();decoder.close();return r;})()`);
-    assert.equal(gif.width,Math.round(vb.width*2));assert.equal(gif.height,Math.round(vb.height*2));assert.equal(gif.alpha,0);assert.equal(gif.frames,2);
+    assert.equal(gif.width,Math.round(vb.width*3));assert.equal(gif.height,Math.round(vb.height*3));assert.equal(gif.alpha,0);assert.equal(gif.frames,2);
     const nativeSvg=await run(`(async()=>{const sources=[...exportUrls.values()].filter(u=>u.blob.type.startsWith('image/svg+xml'));const d=new DOMParser().parseFromString(await sources.at(-1).blob.text(),'image/svg+xml').documentElement;return {width:Number(d.getAttribute('width')),height:Number(d.getAttribute('height'))};})()`);
-    assert.equal(nativeSvg.width,vb.width*2);assert.equal(nativeSvg.height,vb.height*2);
+    assert.equal(nativeSvg.width,vb.width*3);assert.equal(nativeSvg.height,vb.height*3);
     await run(`Archify.exportMenu.run('svg')`);
     assert.equal(await run(`exportDownloads.at(-1).blob.text().then(t=>Number(new DOMParser().parseFromString(t,'image/svg+xml').documentElement.getAttribute('width')))`),vb.width);
-    const oversized=await run(`(()=>{const v=document.querySelector('.diagram-container svg');v.setAttribute('viewBox','0 0 10000 10000');return Archify.exportMenu.run('gif',{scale:4}).then(()=>({error:document.documentElement.getAttribute('data-last-export-error-format'),message:exportAlerts.at(-1)}));})()`);
+    await run(`document.querySelector('.diagram-container svg').setAttribute('viewBox','0 0 100 60')`);
+    let unitSize;
+    for (const scale of [1,3,5,7,10]) {
+      await run(`Archify.exportMenu.run('png',{scale:${scale}})`);
+      const size=await run(`createImageBitmap(exportDownloads.at(-1).blob).then(b=>{const r=[b.width,b.height];b.close();return r;})`);
+      if(scale===1)unitSize=size;
+      assert.deepEqual(size,unitSize.map(n=>n*scale), `${scale}× PNG renders at native resolution`);
+    }
+    for (const scale of [0,2,4,11]) {
+      const count=await run('exportDownloads.length');
+      await run(`Archify.exportMenu.run('png',{scale:${scale}})`);
+      assert.equal(await run('exportDownloads.length'),count);
+      assert.match(await run('exportAlerts.at(-1)'),/1×, 3×, 5×, 7× or 10×/);
+    }
+    for (const format of ['gif','webm']) {
+      await run(`Archify.exportMenu.run('${format}',{scale:10,duration:250,fps:8})`);
+      assert.equal(await run("document.documentElement.getAttribute('data-last-export-format')"),format);
+      const size=await run(`(async()=>{
+        const blob=exportDownloads.at(-1).blob;
+        if('${format}'==='gif') {
+          const decoder=new ImageDecoder({data:await blob.arrayBuffer(),type:'image/gif'});
+          const {image}=await decoder.decode({frameIndex:0});
+          const size=[image.displayWidth,image.displayHeight];image.close();decoder.close();return size;
+        }
+        const url=URL.createObjectURL(blob),video=document.createElement('video');video.src=url;
+        await new Promise((resolve,reject)=>{video.onloadeddata=resolve;video.onerror=reject;});
+        const size=[video.videoWidth,video.videoHeight];video.removeAttribute('src');video.load();URL.revokeObjectURL(url);return size;
+      })()`);
+      assert.deepEqual(size,[1000,600], `${format} decodes at 10× resolution`);
+    }
+    const oversized=await run(`(()=>{const v=document.querySelector('.diagram-container svg');v.setAttribute('viewBox','0 0 10000 10000');return Archify.exportMenu.run('gif',{scale:10}).then(()=>({error:document.documentElement.getAttribute('data-last-export-error-format'),message:exportAlerts.at(-1)}));})()`);
     assert.equal(oversized.error,'gif');assert.match(oversized.message,/lower scale/);
-    if(evidence){const bytes=await run(`scaledGif.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,'scaled-2x.gif'),Buffer.from(bytes));}
+    if(evidence){const bytes=await run(`scaledGif.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,'scaled-3x.gif'),Buffer.from(bytes));}
   });
 
   await t.test('transparent WebM decodes actual alpha and motion with bounded encoder cleanup', async () => {
@@ -488,9 +519,39 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
     assert.deepEqual(cleanup, { message: 'alpha configure fault', closed: 2, revoked: true, errors: [] });
   });
 
+  await t.test('GIF menu frame rate changes decoded frames and preserves duration, transparency and keyboard selection', async () => {
+    await load({theme:'light'});
+    await run('Archify.exportMenu.open()');
+    await click('[data-action="transparent-background"]');
+    assert.equal(await run('document.getElementById("export-gif-fps").value'), '12');
+    for (const [index, fps] of [12,24,30,50].entries()) {
+      await run('Archify.exportMenu.open();document.getElementById("export-gif-fps").focus()');
+      await key('Home', 'Home', 36);
+      for(let step=0;step<index;step++)await key('ArrowDown', 'ArrowDown', 40);
+      assert.equal(await run('document.activeElement.id'), 'export-gif-fps');
+      assert.equal(await run('document.getElementById("export-gif-fps").value'), String(fps));
+      await run(`Archify.exportMenu.run('gif',{duration:1000,scale:1})`);
+      const result=await run(`(async()=>{
+        const decoder=new ImageDecoder({data:await exportDownloads.at(-1).blob.arrayBuffer(),type:'image/gif'});
+        await decoder.tracks.ready;const count=decoder.tracks.selectedTrack.frameCount;
+        const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');let duration=0,blankPainted=0;
+        for(let i=0;i<count;i++){
+          const {image}=await decoder.decode({frameIndex:i});duration+=image.duration;
+          canvas.width=image.displayWidth;canvas.height=image.displayHeight;ctx.drawImage(image,0,0);image.close();
+          const blank=ctx.getImageData(0,0,100,30).data;for(let p=3;p<blank.length;p+=4)if(blank[p])blankPainted++;
+        }
+        decoder.close();return {count,duration,blankPainted};
+      })()`);
+      assert.equal(result.count,fps);assert.equal(result.duration,1000000);assert.equal(result.blankPainted,0);
+    }
+    await run(`Archify.exportMenu.run('gif',{duration:1000,fps:8,scale:1})`);
+    assert.equal(await run(`(async()=>{const d=new ImageDecoder({data:await exportDownloads.at(-1).blob.arrayBuffer(),type:'image/gif'});await d.tracks.ready;const n=d.tracks.selectedTrack.frameCount;d.close();return n;})()`),8,'explicit API fps overrides menu selection');
+    await record('gif-frame-rates');
+  });
+
   await t.test('GIF decodes looping motion and binary transparency without MediaRecorder or trace mode', async () => {
-    for (const transparent of [false,true]) {
-      await load({theme:transparent?'light':'dark'});
+    for (const [transparent,theme] of [[false,'dark'],[false,'light'],[true,'dark'],[true,'light']]) {
+      await load({theme});
       const result=await run(`(async()=>{
         window.MediaRecorder=undefined;
         const svg=document.querySelector('.diagram-container svg');svg.removeAttribute('data-animation');
@@ -501,22 +562,27 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
         await decoder.tracks.ready;
         const count=decoder.tracks.selectedTrack.frameCount,loop=decoder.tracks.selectedTrack.repetitionCount;
         const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
-        let first,changed=0,transparent=0,opaque=0,duration=0;
+        let first,changed=0,transparent=0,opaque=0,duration=0,blankPainted=0;
         for(let i=0;i<count;i++){
           const {image}=await decoder.decode({frameIndex:i});duration+=image.duration;
           canvas.width=image.displayWidth;canvas.height=image.displayHeight;ctx.drawImage(image,0,0);image.close();
           const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+          // A transparent corner alone misses a grid baked into the canvas.
+          // This empty strip crosses grid lines; check it in every decoded frame.
+          const blank=ctx.getImageData(0,0,100,30).data;
+          for(let p=3;p<blank.length;p+=4)if(blank[p])blankPainted++;
           if(!first){first=pixels;for(let p=3;p<pixels.length;p+=4){if(pixels[p]===0)transparent++;if(pixels[p]===255)opaque++;}}
           else if(i===count-1)for(let p=0;p<pixels.length;p++)if(pixels[p]!==first[p])changed++;
         }
-        decoder.close();return {count,loop:loop===Infinity?'infinite':loop,duration,changed,transparent,opaque,size:blob.size,type:blob.type};
+        decoder.close();return {count,loop:loop===Infinity?'infinite':loop,duration,changed,transparent,opaque,blankPainted,size:blob.size,type:blob.type};
       })()`);
       assert.equal(result.count,6);assert.equal(result.loop,'infinite');
       assert.equal(result.duration,500000);assert.ok(result.changed>10,JSON.stringify(result));
       assert.ok(result.opaque>100);assert.equal(result.type,'image/gif');
       assert.ok(transparent?result.transparent>100:result.transparent===0,JSON.stringify(result));
-      assert.ok((await record('gif-'+transparent)).urls.every(u=>u.revoked));
-      if(evidence){const bytes=await run(`gifBlob.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,transparent?'transparent.gif':'opaque.gif'),Buffer.from(bytes));}
+      if(transparent)assert.equal(result.blankPainted,0,'transparent GIF paints its empty canvas');
+      assert.ok((await record('gif-'+transparent+'-'+theme)).urls.every(u=>u.revoked));
+      if(evidence){const bytes=await run(`gifBlob.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,(transparent?'transparent':'opaque')+'-'+theme+'.gif'),Buffer.from(bytes));}
     }
     await load();await run('Archify.exportMenu.open()');await click('[data-format="gif"]');
     await run('exportWait(()=>exportDownloads.length===1)');

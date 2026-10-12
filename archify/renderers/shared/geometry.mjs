@@ -301,7 +301,7 @@ function relationshipSubject(diagramType, relationCollection, relationIndex, rel
   };
 }
 
-const AUTHORED_PLAN_KEYS = ['route', 'via', 'channelX', 'channelY', 'fromSide', 'toSide', 'bias', 'labelAt', 'labelDx', 'labelDy', 'labelSegment'];
+const AUTHORED_PLAN_KEYS = ['route', 'via', 'channelX', 'channelY', 'fromSide', 'toSide', 'fromPort', 'toPort', 'bias', 'labelAt', 'labelDx', 'labelDy', 'labelSegment'];
 
 // Re-planning advice only applies when the failing relation actually carries
 // authored controls; telling an author to remove controls that do not exist

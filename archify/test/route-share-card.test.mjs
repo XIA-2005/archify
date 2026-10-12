@@ -135,7 +135,7 @@ test('Route Share Card reuses one 1200x630 variant seam and publishes a truthful
   assert.match(html, /data-last-export-variant/);
   assert.match(html, /data-last-export-route-state-clean/);
   assert.match(html, /clearExportReceipt\(\);[\s\S]*?var snapshot = Archify\.routeProbe/);
-  assert.match(html, /function runExport\(format\)[\s\S]*?clearExportReceipt\(\);/);
+  assert.match(html, /function runExport\(format, options\)[\s\S]*?clearExportReceipt\(\);/);
   assert.match(html, /var ctx = canvas2dOrThrow\(canvas, viewerText\('viewer\.export\.shareCard'\)\)/);
 });
 

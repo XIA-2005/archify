@@ -1,8 +1,22 @@
 # Archify 可视化编辑器（扩展）
 
+## draw.io 原生线条与框架操作
+
+Architecture 画布使用本地固定版本 **draw.io Desktop 29.7.9** 的原始 `EditorUi`、`Graph` 和 mxGraph 编辑处理器。引擎来源为用户提供的桌面资源包，放在 `vendor/drawio/`，附 Apache-2.0 许可证及 `SOURCE.json` 文件校验值；不依赖 draw.io 网站或用户电脑上的安装目录。`drawio-adapter.mjs` 只负责转换数据和衔接 Archify 的属性、撤销及保存。
+
+在画布上直接选中线条，使用 draw.io 原生端点、线段和折点控制柄、悬停连接箭头、右键菜单与内联文本编辑。节点及框架采用原生八方向缩放、对齐参考线、框选和多选；容器移动带动内部模块。Ctrl+Z / Ctrl+Y 与上方撤销/重做使用同一份 Archify 历史。原生编辑器自己的未保存提示由外层 Archify 接管，避免成功保存后再次出现未保存对话框。
+
+框架手动几何保存在 `boundaries[].bounds: [x,y,width,height]`；未指定时继续按成员自动计算。右侧可恢复自动框架。端点保存在 `connections[].fromPort/toPort` 的归一化坐标，折点保存在原有 `via` 中；保存和重新打开保持这些数据。正式导出继续使用 Archify renderer 及完整校验，违规布局明确报错。
+
+此集成的范围是 **architecture schema v1 中的模块、连接和分组框架**。仍要求连线关联真实模块；独立悬空线、任意 draw.io 图形/曲线/样式、任意多层分组以及其它图类型尚未具备完整 JSON 和正式导出的适配，不能宣称所有 draw.io 行为均已覆盖。不能把这些操作未经过验证的结果当作无损保存。浏览器回归在 `test/drawio-editor-browser.test.mjs`，数据及原始引擎校验在 `test/drawio-geometry.test.mjs`。
+
+已检测到的未适配曲线、自定义箭头、原生文字/线条颜色和旋转模块会阻止 Archify JSON 导出与正式保存，明确提示恢复样式或从原生“文件”菜单导出 draw.io 源文件；不会把曲线静默保存成折线。
+
 此目录提供独立于正式 SVG/HTML 渲染器的本地编辑入口。**正式绘图先由 AI 设计主路径、分组和排版；编辑器仅用于交付后的手工修订，不能以自动布局或编辑器预览替代视觉验收。** 正式渲染和四项检查流程保持不变。
 
 ## 双交付与不同图类型
+
+Architecture：点击连线文字，在属性面板使用“连线文字颜色”的取色器或输入 `#RRGGBB`；点击“恢复默认”重新跟随主题。颜色保存在 `connections[].labelColor`，支持撤销/重做，保存及图片、GIF 导出均保留颜色，只更改文字颜色。
 
 - **Architecture v1**：使用下述 `serve.mjs` 拖拽编辑器，支持节点、连线、独立字号、对齐和自动布局预览；几何和字体排版使用正式渲染流程。
 - **Workflow / Sequence / Dataflow / Lifecycle**：使用新入口 `serve-schema.mjs`，支持结构字段、完整 JSON 编辑、官方 renderer 预览和保存前的 schema/Showcase 验证。目前**不支持拖拽重排这些类型的节点**；不能将这个页面称作完整的图形画布。
@@ -38,7 +52,7 @@ node <skill-root>/editor/deliver.mjs architecture <candidate.json> <diagram.html
 
 「导出图像」窗口还提供 GIF 动图（默认 6 秒、12 fps、循环播放），适合插入桌面 PowerPoint 后在幻灯片放映中播放。静态图也可直接导出连线追踪 GIF，无需修改 JSON 的动画设置；透明背景选项同时适用于 GIF。GIF 使用最多 256 色和二值透明，WebM 保留现有较丰富的色彩和透明度导出。
 
-导出窗口的「导出放大倍数」提供默认 / 1× / 2× / 3× / 4×。图片、GIF、WebM 和 PNG 剪贴板均按目标分辨率重新渲染；默认保留原有图片 4×、动图适配 1280px 的行为。显式倍率相对于图表内容像素，图片还包含按倍率缩放的标题和边距；超出尺寸上限会提示降低倍率。SVG 保持矢量。
+导出窗口的「导出放大倍数」提供默认 / 1× / 3× / 5× / 7× / 10×。图片、GIF、WebM 和 PNG 剪贴板均按目标分辨率重新渲染；默认保留原有图片 4×、动图适配 1280px 的行为。显式倍率相对于图表内容像素，图片还包含按倍率缩放的标题和边距；超出尺寸上限会提示降低倍率。SVG 保持矢量。
 
 SVG（自动 / 浅色 / 深色）也遵循「透明背景」选项：勾选后不导出画布背景和网格，节点填充、文字、连线及矢量清晰度保留；自动主题切换后背景仍透明。
 
@@ -58,7 +72,7 @@ SVG（自动 / 浅色 / 深色）也遵循「透明背景」选项：勾选后�
 
 - 节点拖动、选中后的标签/说明/类型/尺寸/位置编辑
 - 直接点击连线上的文字即可选中对应连线，展开属性检查器并聚焦「连线文字」；在旁边的「连线文字字号」单独调整大小（6–72px，步长 0.5）。文字底色保持透明，空白标签区域也可点击；键盘聚焦标签后按 Enter 或空格同样可编辑。修改支持撤销/重做，保存和导出使用修改后的 `label` / `font_sizes.label`。没有标签时可点击连线添加文字。
-- 连线选中后修改起点、终点；两次点击节点添加连线
+- 连线选中后修改起点、终点；拖动 draw.io 原生悬停箭头添加连线
 - 新建/删除模块、连线、说明卡片；撤销/重做、画布平移与缩放
 - 导出草稿 JSON；保存前完整 Showcase 验证，校验不通过时原文件不被覆盖
 - 保存正式 candidate.json 前自动备份；随后使用原版 Archify finalize 生成 HTML 与四项检查
@@ -68,10 +82,10 @@ SVG（自动 / 浅色 / 深色）也遵循「透明背景」选项：勾选后�
 不可通过网页改变输入文件、输出路径或仓库标识。不要向其他人发送完整的编辑 URL。
 不适用于公网部署或多人协同。
 
-连线预览严格使用原版 Archify 的 render architecture 计算 SVG 路径
-（含正交转弯、圆角、箭头端点）及标签坐标；编辑器不会自行生成连线或使用近似直线。
-拖动节点后自动调用正式渲染器更新；过时的连线仅作为半透明虚线参考，
-若候选布局无法渲染，则明确显示错误，绝不将参考线路当作已验证的结果。
+初始连线路径及标签位置由原版 Archify 的 render architecture 提供；
+实际拖动时由原生 draw.io 画布计算并显示草稿几何，适配器保存精确端点及正交折点。
+修改后仍请求正式渲染器校验；若布局无法渲染，明确显示错误。
+原生草稿画布不能作为正式 HTML 已通过校验或视觉验收的证据。
 性能管线采用异步官方 CLI 子进程、会话内 32 项 LRU 缓存、
 相同候选请求合并、最多两个并发渲染及浏览器过期请求取消。
 缓存仅保存完整的官方 SVG 路由结果；保存仍使用原版 validate/finalize。
@@ -92,7 +106,9 @@ SVG（自动 / 浅色 / 深色）也遵循「透明背景」选项：勾选后�
 预览 p50/p95、同一候选并发请求的总耗时，以及渲染时 /api/spec 的响应时间。
 它不会修改原始候选。基准数字依赖机器与图规模，比较前后版本时须使用相同输入。
 
-## v0.2 manual layout extension
+## v0.2 manual layout extension（旧 SVG 画布实现记录）
+
+以下自定义 SVG 交互及浏览器测试描述历史实现；当前画布交互以本文开头的 draw.io 原生操作及新浏览器回归为准。
 
 - Ctrl + click for multi-node selection, six alignments, horizontal/vertical distribution and 24px grid snapping.
 - Nodes can move beyond the left/top canvas edge. Completing a drag translates the whole scene, waypoints, pinned labels, layout origin and camera into valid nonnegative coordinates in one undoable operation. Automatically sized diagrams remain automatic; explicit viewBox dimensions expand as needed.
