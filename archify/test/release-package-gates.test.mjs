@@ -1,3 +1,4 @@
+import { gitTool } from './helpers/git-tool.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -6,10 +7,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { stageCleanSkill } from '../../scripts/stage-clean-skill.mjs';
+import { stageSourceSkill, sourceGitEnvironment } from './helpers/source-index.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..');
+
 const canonicalZipNodeMajor = 22;
 const canonicalZipZlibVersion = '1.3.1-e00f703';
 const currentNodeMajor = Number(process.versions.node.split('.')[0]);
@@ -53,11 +55,11 @@ function spawnBuildZip(outputPath, options = {}) {
 }
 
 function preparePackageIndex(indexPath, extraPaths) {
-  const env = { ...process.env, GIT_INDEX_FILE: indexPath };
+  const env = { ...process.env, ...sourceGitEnvironment(repoRoot), GIT_INDEX_FILE: indexPath };
   let result = spawnSync('git', ['read-tree', 'HEAD'], { cwd: repoRoot, env, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   result = spawnSync('git', ['rev-parse', 'HEAD:archify/LICENSE'], {
-    cwd: repoRoot,
+    cwd: repoRoot, env,
     encoding: 'utf8',
   });
   assert.equal(result.status, 0, result.stderr);
@@ -347,7 +349,7 @@ test('package smoke rejects a missing or modified distribution license', () => {
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-package-license-gate-'));
   try {
     const staged = path.join(fixture, 'archify');
-    stageCleanSkill({ repoRoot, destination: staged });
+    stageSourceSkill({ repoRoot, destination: staged });
     const licensePath = path.join(staged, 'LICENSE');
 
     fs.rmSync(licensePath);
@@ -381,7 +383,7 @@ test('package smoke rejects missing, modified, or incomplete third-party notices
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-package-notices-gate-'));
   try {
     const staged = path.join(fixture, 'archify');
-    stageCleanSkill({ repoRoot, destination: staged });
+    stageSourceSkill({ repoRoot, destination: staged });
     const noticesPath = path.join(staged, 'THIRD_PARTY_NOTICES.md');
 
     fs.rmSync(noticesPath);
@@ -428,7 +430,7 @@ test('package smoke increments an arbitrary-precision SemVer patch without Numbe
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-package-bigint-version-'));
   const skillRoot = path.join(scratch, 'archify');
   try {
-    stageCleanSkill({ repoRoot, destination: skillRoot });
+    stageSourceSkill({ repoRoot, destination: skillRoot });
     const packagePath = path.join(skillRoot, 'package.json');
     const releasePath = path.join(skillRoot, 'skill-release.json');
     const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
@@ -492,7 +494,7 @@ test('clean package staging rejects non-portable tracked names and entry collisi
     try {
       process.env.GIT_INDEX_FILE = env.GIT_INDEX_FILE;
       assert.throws(
-        () => stageCleanSkill({ repoRoot, destination }),
+        () => stageSourceSkill({ repoRoot, destination }),
         (error) => error?.code === code,
       );
       assert.equal(fs.existsSync(destination), false, 'portable-name rejection must precede staging writes');
@@ -641,7 +643,7 @@ canonicalZipTest('package smoke rejects every dependency metadata field in a bui
 
     const extracted = path.join(fixture, 'extracted');
     fs.mkdirSync(extracted);
-    const unzip = spawnSync('unzip', ['-q', archive, '-d', extracted], { encoding: 'utf8' });
+    const unzip = spawnSync(gitTool('unzip'), ['-q', archive, '-d', extracted], { encoding: 'utf8' });
     assert.equal(unzip.status, 0, `${unzip.stdout}\n${unzip.stderr}`);
     const builtPackage = path.join(extracted, 'archify');
     const dependencyFields = {
@@ -679,7 +681,7 @@ canonicalZipTest('built archives contain the embedded notifier runtime', () => {
     const build = spawnBuildZip(archive);
     assert.equal(build.status, 0, `${build.stdout}\n${build.stderr}`);
 
-    const listing = spawnSync('unzip', ['-Z1', archive], { encoding: 'utf8' });
+    const listing = spawnSync(gitTool('unzip'), ['-Z1', archive], { encoding: 'utf8' });
     assert.equal(listing.status, 0, `${listing.stdout}\n${listing.stderr}`);
     const entries = new Set(listing.stdout.trim().split('\n'));
     assert.ok(entries.has('archify/skill-release.json'));
@@ -711,7 +713,7 @@ canonicalZipTest('archive build excludes untracked files and external symlinks f
     const build = spawnBuildZip(archive);
     assert.equal(build.status, 0, `${build.stdout}\n${build.stderr}`);
 
-    const listing = spawnSync('unzip', ['-Z1', archive], { encoding: 'utf8' });
+    const listing = spawnSync(gitTool('unzip'), ['-Z1', archive], { encoding: 'utf8' });
     assert.equal(listing.status, 0, `${listing.stdout}\n${listing.stderr}`);
     assert.doesNotMatch(listing.stdout, new RegExp(marker), 'untracked files and symlinks must not enter the archive');
   } finally {
@@ -791,7 +793,7 @@ canonicalZipTest('archive build rejects an unmerged index and preserves an exist
     fs.writeFileSync(license, '<<<<<<< ours\n=======\n>>>>>>> theirs\n');
     fs.writeFileSync(archive, trusted);
 
-    const build = spawnSync('bash', [path.join(scripts, 'build-zip.sh'), archive], {
+    const build = spawnSync(gitTool('bash'), [path.join(scripts, 'build-zip.sh'), archive], {
       cwd: fixture,
       encoding: 'utf8',
     });

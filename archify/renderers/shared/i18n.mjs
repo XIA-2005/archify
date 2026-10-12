@@ -161,7 +161,7 @@ const MESSAGE_PAIRS = {
   'viewer.export.gifFps.hint': ['Higher frame rates give smoother motion and larger files. GIF timing uses 10 ms steps.', '帧率越高，动画越流畅，文件也越大。GIF 帧间隔以 10 毫秒为单位。'],
   'viewer.export.scale.auto': ['Default', '默认'],
   'viewer.export.scale.hint': ['PNG / JPEG / WebP / GIF / WebM · Default: images 4×, motion up to 1280px. SVG stays vector.', 'PNG / JPEG / WebP / GIF / WebM · 默认图片 4×，动图宽度适配 1280px；SVG 保持矢量。'],
-  'viewer.export.error.scale': ['Choose an export scale from 1× to 4×', '请选择 1× 至 4× 的导出倍率'],
+  'viewer.export.error.scale': ['Choose an export scale: 1×, 3×, 5×, 7× or 10×', '请选择导出倍率：1×、3×、5×、7× 或 10×'],
   'viewer.export.error.scaleTooLarge': ['This scale exceeds the export size limit. Choose a lower scale.', '此倍率超出导出尺寸上限，请选择较低倍率。'],
   'viewer.export.transparent': ['Transparent background', '透明背景'],
   'viewer.export.transparent.hint': ['PNG / WebP / WebM / GIF / SVG · JPEG stays opaque', 'PNG / WebP / WebM / GIF / SVG · JPEG 保留实色背景'],

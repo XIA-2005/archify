@@ -1,3 +1,9 @@
+> **Archify カスタム版：書き出しと可視化エディター**
+>
+> ローカルエディター、透明背景、ループ GIF に加え、書き出し倍率は既定 / 1× / 3× / 5× / 7× / 10× を選択できます。最大 10 倍で元のベクターから描画します。サイズ上限を超える場合は低い倍率を選択してください。開発更新は `dev` に統合してから、別の PR で安定版 `main` に反映します。[機能と検証（中文）](archify/README.md)をご覧ください。
+
+---
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/archify-lockup-dark.svg" />

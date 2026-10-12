@@ -7,7 +7,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
-import { stageCleanSkill } from '../../scripts/stage-clean-skill.mjs';
+import { stageSourceSkill } from './helpers/source-index.mjs';
 
 const require = createRequire(import.meta.url);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -63,7 +63,7 @@ test('real Skills CLI keeps source and ZIP installs scoped to the requested Skil
   const archive = path.join(tmp, 'archive');
   // Use the repository's tracked-file stager: no node_modules, local Skills,
   // symlinks, or other developer files enter the installation source.
-  stageCleanSkill({ repoRoot, destination: path.join(source, 'archify') });
+  stageSourceSkill({ repoRoot, destination: path.join(source, 'archify') });
   const review = '.agents/skills/archify-review/SKILL.md';
   fs.mkdirSync(path.dirname(path.join(source, review)), { recursive: true });
   fs.copyFileSync(path.join(repoRoot, review), path.join(source, review));

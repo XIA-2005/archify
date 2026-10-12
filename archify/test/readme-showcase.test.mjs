@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gitTool } from './helpers/git-tool.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(__dirname, '..');
@@ -384,7 +385,7 @@ test('Star History publishing advances the data branch without a force push', ()
     const firstTemp = path.join(fixture, 'run-1');
     fs.mkdirSync(firstTemp);
     writeStarHistoryCharts(firstCheckout, 'v1');
-    execFileSync('bash', [publisher, 'star-history'], {
+    execFileSync(gitTool('bash'), [publisher, 'star-history'], {
       cwd: firstCheckout,
       env: { ...process.env, RUNNER_TEMP: firstTemp },
     });
@@ -394,7 +395,7 @@ test('Star History publishing advances the data branch without a force push', ()
     const secondTemp = path.join(fixture, 'run-2');
     fs.mkdirSync(secondTemp);
     writeStarHistoryCharts(secondCheckout, 'v2');
-    execFileSync('bash', [publisher, 'star-history'], {
+    execFileSync(gitTool('bash'), [publisher, 'star-history'], {
       cwd: secondCheckout,
       env: { ...process.env, RUNNER_TEMP: secondTemp },
     });

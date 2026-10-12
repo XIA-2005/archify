@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { parse } from 'yaml';
+import { gitTool } from './helpers/git-tool.mjs';
 
 const workflow = parse(fs.readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8'));
 const cloudflare = workflow.jobs['deploy-cloudflare'];
@@ -48,7 +49,7 @@ test('Cloudflare publishes only the checked artifact at the current main SHA', (
 test('Cloudflare destination rejects invalid values without evaluating them as shell code', () => {
   const step = cloudflare.steps.find(step => step.name === 'Validate Cloudflare destination');
   assert.ok(!step.run.includes('${{'));
-  const run = project => spawnSync('bash', ['-c', step.run], {
+  const run = project => spawnSync(gitTool('bash'), ['-c', step.run], {
     env: { ...process.env, CLOUDFLARE_PAGES_PROJECT: project, CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32) },
   });
   assert.equal(run('archify').status, 0);

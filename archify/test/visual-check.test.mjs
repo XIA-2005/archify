@@ -1,3 +1,4 @@
+import { fileSymlinkSkip } from './helpers/filesystem-capabilities.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -1076,7 +1077,7 @@ for (const scenario of [
   },
 ]) {
   test(`visual-check preserves a ${scenario.name} swapped at the backup link boundary`, {
-    skip: scenario.skip,
+    skip: scenario.name === 'symlink' ? fileSymlinkSkip : scenario.skip,
   }, async (t) => {
     const input = artifact(`backup-link-${scenario.name.toLowerCase()}-successor.html`);
     const outputs = sidecarPaths(input);
@@ -1601,7 +1602,7 @@ test('visual-check never follows the former predictable temporary symlink', asyn
   assert.deepEqual(stagingDirectories(path.dirname(outputs.receipt)), []);
 });
 
-test('visual-check preserves absent and replaced paths that become symlinks after preflight', async (t) => {
+test('visual-check preserves absent and replaced paths that become symlinks after preflight', {skip:fileSymlinkSkip}, async (t) => {
   const sentinel = path.join(tmp, 'late-symlink-sentinel.txt');
   const sentinelBytes = Buffer.from('symlink claimant target\n');
   fs.writeFileSync(sentinel, sentinelBytes);

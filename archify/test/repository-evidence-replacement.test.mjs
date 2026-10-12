@@ -26,11 +26,13 @@ function fixture(t, scenario) {
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const repo = path.join(root, 'repo');
   fs.mkdirSync(repo);
+  const emptyConfig = path.join(root, 'empty.gitconfig');
+  fs.writeFileSync(emptyConfig, '');
   // 隔离调用者的 Git 环境与配置，不改动真实 HOME 或全局配置。
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
   Object.assign(env, {
     GIT_CONFIG_NOSYSTEM: '1',
-    GIT_CONFIG_GLOBAL: os.devNull,
+    GIT_CONFIG_GLOBAL: emptyConfig,
     GIT_TERMINAL_PROMPT: '0',
     ...(scenario.refBase ? { GIT_REPLACE_REF_BASE: scenario.refBase } : {}),
   });

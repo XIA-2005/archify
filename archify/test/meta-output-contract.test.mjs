@@ -1,3 +1,4 @@
+import { fileSymlinkSkip } from './helpers/filesystem-capabilities.mjs';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -133,11 +134,12 @@ for (const boundary of [
     output: 'reports/diagram.html',
     expected: /meta\.output must stay inside the current working directory/i,
     prepare(directory, outside) {
-      fs.symlinkSync(outside, path.join(directory, 'reports'), 'dir');
+      fs.symlinkSync(outside, path.join(directory, 'reports'), process.platform === 'win32' ? 'junction' : 'dir');
     },
   },
   {
     label: 'resolves through a file symlink to a non-HTML target',
+    requiresFileSymlink: true,
     output: 'diagram.html',
     expected: /meta\.output must resolve to an? \.html file/i,
     prepare(directory) {
@@ -146,7 +148,7 @@ for (const boundary of [
     },
   },
 ]) {
-  test(`every command rejects durable meta.output that ${boundary.label}, even with a CLI target`, t => {
+  test(`every command rejects durable meta.output that ${boundary.label}, even with a CLI target`, {skip:boundary.requiresFileSymlink ? fileSymlinkSkip : false}, t => {
     const directory = workspace(t);
     const outside = path.join(directory, '..', `${path.basename(directory)}-outside`);
     fs.mkdirSync(outside);
