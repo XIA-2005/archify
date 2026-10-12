@@ -4,6 +4,8 @@
 
 ## 双交付与不同图类型
 
+Architecture：点击连线文字，在属性面板使用“连线文字颜色”的取色器或输入 `#RRGGBB`；点击“恢复默认”重新跟随主题。颜色保存在 `connections[].labelColor`，支持撤销/重做，保存及图片、GIF 导出均保留颜色，只更改文字颜色。
+
 - **Architecture v1**：使用下述 `serve.mjs` 拖拽编辑器，支持节点、连线、独立字号、对齐和自动布局预览；几何和字体排版使用正式渲染流程。
 - **Workflow / Sequence / Dataflow / Lifecycle**：使用新入口 `serve-schema.mjs`，支持结构字段、完整 JSON 编辑、官方 renderer 预览和保存前的 schema/Showcase 验证。目前**不支持拖拽重排这些类型的节点**；不能将这个页面称作完整的图形画布。
 - 对任何类型，先以 `finalize` 输出独立 HTML；需视觉验收时用 `visual-check` 真实查看 1440×900 截图，通过后才可称作品精美。编辑器启动、连线预览和保存操作不得绕过该标准。
