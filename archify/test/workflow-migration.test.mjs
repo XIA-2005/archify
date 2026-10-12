@@ -1,3 +1,4 @@
+import { fileSymlinkSkip } from './helpers/filesystem-capabilities.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -698,7 +699,7 @@ test('workflow migration rejects the source path as its destination without chan
   assert.ok(failure.diagnostics[0].supportedFixes.some((fix) => /different.*destination/i.test(fix)));
 });
 
-test('workflow migration reports a cyclic-symlink destination as structured JSON', () => {
+test('workflow migration reports a cyclic-symlink destination as structured JSON', {skip:fileSymlinkSkip}, () => {
   const source = copyFixture('symlink-cycle-source.workflow.json');
   const destination = path.join(tmp, 'migration-cycle-a.workflow.json');
   const otherLink = path.join(tmp, 'migration-cycle-b.workflow.json');
@@ -714,7 +715,7 @@ test('workflow migration reports a cyclic-symlink destination as structured JSON
   assert.equal(failure.diagnostics[0].subject.output, path.resolve(destination));
 });
 
-test('workflow migration rejects a dangling destination symlink without touching it', () => {
+test('workflow migration rejects a dangling destination symlink without touching it', {skip:fileSymlinkSkip}, () => {
   const source = copyFixture('dangling-destination-source.workflow.json');
   const destination = path.join(tmp, 'dangling-destination.workflow.json');
   const missingTarget = path.join(tmp, 'missing-migration-target.workflow.json');

@@ -66,7 +66,7 @@ test('signal-flow preset reaches the page, SVG, and motion export surface', () =
   assert.match(html, /data-preset-badge-signal-flow="SIGNAL FLOW"/);
   assert.match(html, /data-format="webm"/);
   assert.match(html, /data-last-motion-bytes/);
-  assert.match(html, /Archify\.motion = \{ canRecord: canRecordMotion, recordWebm: recordWebm \}/);
+  assert.match(html, /Archify\.motion = \{ canRecord: canRecordMotion, recordWebm: recordWebm, canEncodeGif: canEncodeGif, recordGif: recordGif \}/);
   assert.match(html, /recorder\.requestData\(\)/);
   assert.match(html, /aria-label="Diagram view controls"/);
   assert.match(html, /Archify\.focus = \(function \(\)/);
@@ -84,7 +84,8 @@ test('signal-flow preset reaches the page, SVG, and motion export surface', () =
 
 test('webm renders an explicit time-varying canvas scene instead of replaying one cached SVG bitmap', () => {
   const html = render('architecture', CASES.architecture, 'trace', 'signal-flow');
-  const recordBlock = html.match(/function recordWebm\(options\) \{[\s\S]*?\n      var menu =/)?.[0] || '';
+  const recordBlock = html.match(/function recordMotion\(options, format\) \{[\s\S]*?\n      function recordWebm/)?.[0] || '';
+  assert.match(html, /function recordWebm\(options\) \{ return recordMotion\(options, 'webm'\); \}/);
 
   assert.match(recordBlock, /var motionScene = createMotionScene\(svg\)/);
   assert.match(recordBlock, /drawMotionFrame\(ctx, backgroundImage, motionScene, elapsed\)/);

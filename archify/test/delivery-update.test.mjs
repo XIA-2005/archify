@@ -84,20 +84,30 @@ test('service deadline kills a blocked child and leaves no later result', async 
   assert.deepEqual(fs.readdirSync(root).sort(), ['blocker.mjs', 'skill-release.json']);
 });
 
-test('a slow network records its failed check before the deadline and backs off', async (t) => {
+test('a slow network after cache preparation records its failure before the deadline and backs off', async (t) => {
   const testFixture = fixture(t);
   const calls = path.join(testFixture.root, 'fetch-calls');
   const preload = path.join(testFixture.root, 'slow-fetch.mjs');
   fs.writeFileSync(preload, `import fs from 'node:fs';
+import io from 'node:fs/promises';
+const lstat = io.lstat;
+let delayed = false;
+io.lstat = async function(target, ...args) {
+  if (!delayed && target === ${JSON.stringify(testFixture.releasePath)}) {
+    delayed = true;
+    await new Promise(resolve => setTimeout(resolve, 400));
+  }
+  return lstat.call(this, target, ...args);
+};
 globalThis.fetch = (_url, { signal }) => {
   fs.appendFileSync(${JSON.stringify(calls)}, 'x');
   return new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(signal.reason)));
 };
 `);
   const slowEnv = { ...env(testFixture), NODE_OPTIONS: `--import=${pathToFileURL(preload).href}` };
-  const first = await startDeliveryUpdateCheck({ env: slowEnv, deadlineMs: 600 });
+  const first = await startDeliveryUpdateCheck({ env: slowEnv, deadlineMs: 1200 });
   assert.equal(first.reason, 'check-failed');
-  const second = await startDeliveryUpdateCheck({ env: slowEnv, deadlineMs: 600 });
+  const second = await startDeliveryUpdateCheck({ env: slowEnv, deadlineMs: 1200 });
   assert.equal(second.status, 'unavailable');
   assert.equal(fs.readFileSync(calls, 'utf8'), 'x');
 });

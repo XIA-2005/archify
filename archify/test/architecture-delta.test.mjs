@@ -810,6 +810,16 @@ test('artifact validation fails closed on missing, duplicate, or self-blessed re
   const fraudTag = deltaSection.match(/<g\s+[^>]*\bdata-node-id="fraud"[^>]*>/)?.[0];
   assert.ok(fraudTag);
 
+  assert.equal(validateArchitectureDeltaHtml(html.replace('</body>', '<script>var distance = Infinity;</script></body>'), receipt).ok, true);
+  for (const value of ['NaN', 'Infinity', '-Infinity']) {
+    const brokenTag = fraudTag.replace(/\s transform="[^"]*"/, '').replace(/>$/, ` transform="translate(${value} 0)">`);
+    assert.throws(
+      () => validateArchitectureDeltaHtml(html.replace(fraudTag, brokenTag), receipt),
+      (error) => error instanceof ArchitectureDeltaError
+        && error.details.failures.includes('contains non-finite output'),
+    );
+  }
+
   const missing = html.replace(fraudTag, fraudTag.replace('data-node-id="fraud"', 'data-node-id="tampered"'));
   assert.throws(
     () => validateArchitectureDeltaHtml(missing, receipt),

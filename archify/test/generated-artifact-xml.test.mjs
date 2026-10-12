@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { htmlArtifacts } from './helpers/artifact-files.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,15 +17,7 @@ const artifactRoots = [
 ];
 
 function trackedHtmlArtifacts() {
-  const tracked = spawnSync('git', ['ls-files', '-z', '--', ...artifactRoots], {
-    cwd: repoRoot,
-    encoding: 'buffer',
-  });
-  assert.equal(tracked.status, 0, tracked.stderr.toString());
-  return tracked.stdout.toString()
-    .split('\0')
-    .filter((entry) => entry.endsWith('.html'))
-    .sort();
+  return htmlArtifacts(repoRoot, artifactRoots);
 }
 
 test('artifact SVG extraction follows HTML quoting and preserves SVG document boundaries', () => {

@@ -201,7 +201,7 @@ test('preview: rejects destructive or unsupported startup targets before watchin
   const realDirectory = path.join(tmp, 'real');
   const linkedDirectory = path.join(tmp, 'linked');
   fs.mkdirSync(realDirectory);
-  fs.symlinkSync(realDirectory, linkedDirectory, 'dir');
+  fs.symlinkSync(realDirectory, linkedDirectory, process.platform === 'win32' ? 'junction' : 'dir');
   await assert.rejects(
     startPreview({
       type: 'architecture',

@@ -33,6 +33,8 @@ function windowsShortPath(targetPath) {
   const shortPath = result.stdout.trim();
   if (!shortPath) throw new Error('Windows returned an empty 8.3 path');
   if (path.resolve(shortPath).toLowerCase() === path.resolve(targetPath).toLowerCase()) return null;
+  // A parent-directory alias alone does not provide a short file extension.
+  if (path.basename(shortPath).toLowerCase() === path.basename(targetPath).toLowerCase()) return null;
   if (fs.realpathSync.native(shortPath).toLowerCase() !== fs.realpathSync.native(targetPath).toLowerCase()) {
     throw new Error('Windows returned an 8.3 path for a different filesystem entry');
   }

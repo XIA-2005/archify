@@ -39,7 +39,7 @@ for (const kind of ['node', 'edge', 'boundary']) {
     test(`compare preserves literal replacement tokens in ${operation} ${kind} labels`, (t) => {
       const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-delta-literals-'));
       t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-      for (const label of ['PID $$', 'Match $&', 'Before $`', "After $'"]) {
+      for (const label of ['PID $$', 'Match $&', 'Before $`', "After $'", 'NaN / Infinity']) {
         const inputs = fixtures(kind, operation, label).map((value, index) => {
           const file = path.join(dir, `${index}.json`);
           fs.writeFileSync(file, JSON.stringify(value));
