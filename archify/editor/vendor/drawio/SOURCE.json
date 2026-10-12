@@ -1,0 +1,21 @@
+{
+  "project": "draw.io",
+  "version": "29.7.9",
+  "source": "User-provided draw.io Desktop resources/app.asar; drawio/src/main/webapp",
+  "license": "Apache-2.0",
+  "files": {
+    "app.min.js": "30e0e7ec734b081928b3facd4044c421943e67337a457ad4f655bf4c72c83a32",
+    "LICENSE": "5ad8c213095c573921d7388edf93f6a9f54490b8ebf3b165ae8ef1947cf70846",
+    "resources/dia.txt": "74ba8532b2fe3097117479a9f4f841ffa0df410931524ba5dc0a2ebbc6d5e5cf",
+    "resources/dia_zh.txt": "3b43e81a33eecc57cc343cfd87d05e5d95269360222c66e8e1e46af29cf017b0",
+    "styles/dark-default.xml": "5e6845c8e1bd0d1e3593b5aac375a55093703e1b57cd35348b47f03e6e6dd012",
+    "styles/default-old.xml": "3078148bc7e2cab8aeaa1c0942b9c95c3043cf7c762de0be7e93527f9fbde448",
+    "styles/default.xml": "f1f93e829a0ed8a5c62aa0db84177352ef745b578b3c990ee5ef9158098d22bd",
+    "styles/fonts/ArchitectsDaughter-Regular.ttf": "8116fb167643f707c4a99f544e9bcdb9cb7ba00c0a72c9bbc9e0b20966ed9810",
+    "styles/grapheditor.css": "255a9c7292b8243d6feaa7467ef06345079ef41e07cb47197a2ec49ef665df4e",
+    "styles/high-contrast.css": "f0dde60cb72e43f25b2a0a5c8fac4dcd04173f9ca1f5f710d9008e4f229bf427",
+    "styles/thumb_horz.png": "375ec4a4de1fcb9bbca1d37fc6e984bb7cc07024686e677bd722e65e9e254e92",
+    "styles/thumb_vertical.png": "81c093bb9865e9116ee5507c908290906f141170bd6b79e734820ddbe01a01b3",
+    "mxgraph/css/common.css": "95710454db13cc76e51a84eb80d212174b941e7d60fc3c65a8e93e31a6e68b14"
+  }
+}

@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertFontCss, assertOfflineArtifact, inspectDocuments } from './helpers/offline-fonts.mjs';
+import { htmlArtifacts } from './helpers/artifact-files.mjs';
 
 const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.resolve(skillRoot, '..');
@@ -69,9 +70,7 @@ test('a freshly delivered artifact of every type reaches no external origin', ()
 
 test('every checked-in viewer artifact carries its font and reaches no external origin', () => {
   // Delivery-chain roots only; frozen experiments are not maintained viewers.
-  const tracked = spawnSync('git', ['ls-files', '-z', '--', 'archify/examples', 'docs', 'examples'], { cwd: repoRoot, encoding: 'utf8' });
-  assert.equal(tracked.status, 0, tracked.stderr);
-  const artifacts = tracked.stdout.split('\0').filter((entry) => entry.endsWith('.html'))
+  const artifacts = htmlArtifacts(repoRoot, ['archify/examples', 'docs', 'examples'])
     .filter((entry) => /Archify\.readerLayout/.test(fs.readFileSync(path.join(repoRoot, entry), 'utf8')));
   for (const required of ['examples/checkout-platform-delta.html', ...DIAGRAMS.map(([, , output]) => `archify/examples/${output}`)]) {
     assert.ok(artifacts.includes(required), `missing delivery-chain artifact: ${required}`);

@@ -4,46 +4,113 @@
   "title": "Archify Architecture Diagram",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "diagram_type", "meta", "components"],
+  "required": [
+    "schema_version",
+    "diagram_type",
+    "meta",
+    "components"
+  ],
   "properties": {
-    "schema_version": { "const": 1 },
-    "diagram_type": { "const": "architecture" },
+    "schema_version": {
+      "const": 1
+    },
+    "diagram_type": {
+      "const": "architecture"
+    },
     "meta": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["title", "output"],
+      "required": [
+        "title",
+        "output"
+      ],
       "properties": {
-        "title": { "type": "string", "minLength": 1 },
-        "locale": { "$ref": "common.schema.json#/$defs/locale" },
-        "translations": { "$ref": "common.schema.json#/$defs/translations" },
-        "subtitle": { "type": "string" },
-        "output": { "$ref": "common.schema.json#/$defs/portableOutputPath" },
-        "animation": { "$ref": "common.schema.json#/$defs/animation" },
-        "visual_preset": { "$ref": "common.schema.json#/$defs/visualPreset" },
-        "quality_profile": { "$ref": "common.schema.json#/$defs/qualityProfile" },
-        "font_scale": { "type": "number", "minimum": 0.85, "maximum": 1.3 },
-        "font_sizes": { "$ref": "common.schema.json#/$defs/fontSizes" },
-        "line_scale": { "type": "number", "minimum": 0.75, "maximum": 4 },
-        "arrow_scale": { "type": "number", "minimum": 0.5, "maximum": 4 },
-        "engineering_profile": { "enum": ["deployment-ownership"] },
-        "repository": { "$ref": "common.schema.json#/$defs/repository" },
-        "views": { "$ref": "common.schema.json#/$defs/guidedViews" },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locale": {
+          "$ref": "common.schema.json#/$defs/locale"
+        },
+        "translations": {
+          "$ref": "common.schema.json#/$defs/translations"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "output": {
+          "$ref": "common.schema.json#/$defs/portableOutputPath"
+        },
+        "animation": {
+          "$ref": "common.schema.json#/$defs/animation"
+        },
+        "visual_preset": {
+          "$ref": "common.schema.json#/$defs/visualPreset"
+        },
+        "quality_profile": {
+          "$ref": "common.schema.json#/$defs/qualityProfile"
+        },
+        "font_scale": {
+          "type": "number",
+          "minimum": 0.85,
+          "maximum": 1.3
+        },
+        "font_sizes": {
+          "$ref": "common.schema.json#/$defs/fontSizes"
+        },
+        "line_scale": {
+          "type": "number",
+          "minimum": 0.75,
+          "maximum": 4
+        },
+        "arrow_scale": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 4
+        },
+        "engineering_profile": {
+          "enum": [
+            "deployment-ownership"
+          ]
+        },
+        "repository": {
+          "$ref": "common.schema.json#/$defs/repository"
+        },
+        "views": {
+          "$ref": "common.schema.json#/$defs/guidedViews"
+        },
         "legend": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "mode": { "$ref": "common.schema.json#/$defs/legendMode" },
+            "mode": {
+              "$ref": "common.schema.json#/$defs/legendMode"
+            },
             "entries": {
               "type": "object",
               "additionalProperties": false,
               "properties": {
-                "frontend": { "$ref": "common.schema.json#/$defs/legendEntry" },
-                "backend": { "$ref": "common.schema.json#/$defs/legendEntry" },
-                "database": { "$ref": "common.schema.json#/$defs/legendEntry" },
-                "cloud": { "$ref": "common.schema.json#/$defs/legendEntry" },
-                "security": { "$ref": "common.schema.json#/$defs/legendEntry" },
-                "messagebus": { "$ref": "common.schema.json#/$defs/legendEntry" },
-                "external": { "$ref": "common.schema.json#/$defs/legendEntry" }
+                "frontend": {
+                  "$ref": "common.schema.json#/$defs/legendEntry"
+                },
+                "backend": {
+                  "$ref": "common.schema.json#/$defs/legendEntry"
+                },
+                "database": {
+                  "$ref": "common.schema.json#/$defs/legendEntry"
+                },
+                "cloud": {
+                  "$ref": "common.schema.json#/$defs/legendEntry"
+                },
+                "security": {
+                  "$ref": "common.schema.json#/$defs/legendEntry"
+                },
+                "messagebus": {
+                  "$ref": "common.schema.json#/$defs/legendEntry"
+                },
+                "external": {
+                  "$ref": "common.schema.json#/$defs/legendEntry"
+                }
               }
             }
           }
@@ -51,8 +118,14 @@
         "viewBox": {
           "type": "array",
           "prefixItems": [
-            { "type": "number", "minimum": 320 },
-            { "type": "number", "minimum": 240 }
+            {
+              "type": "number",
+              "minimum": 320
+            },
+            {
+              "type": "number",
+              "minimum": 240
+            }
           ],
           "items": false,
           "minItems": 2,
@@ -63,15 +136,39 @@
     "layout": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["mode"],
+      "required": [
+        "mode"
+      ],
       "properties": {
-        "mode": { "enum": ["grid"] },
-        "origin": { "$ref": "common.schema.json#/$defs/point" },
-        "cols": { "type": "integer", "minimum": 1, "maximum": 12 },
-        "gapX": { "type": "number", "minimum": 0 },
-        "gapY": { "type": "number", "minimum": 0 },
-        "cellW": { "type": "number", "minimum": 40 },
-        "cellH": { "type": "number", "minimum": 24 }
+        "mode": {
+          "enum": [
+            "grid"
+          ]
+        },
+        "origin": {
+          "$ref": "common.schema.json#/$defs/point"
+        },
+        "cols": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "gapX": {
+          "type": "number",
+          "minimum": 0
+        },
+        "gapY": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cellW": {
+          "type": "number",
+          "minimum": 40
+        },
+        "cellH": {
+          "type": "number",
+          "minimum": 24
+        }
       }
     },
     "components": {
@@ -80,25 +177,62 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "type", "label"],
+        "required": [
+          "id",
+          "type",
+          "label"
+        ],
         "properties": {
-          "id": { "$ref": "common.schema.json#/$defs/id" },
-          "type": { "$ref": "common.schema.json#/$defs/componentType" },
-          "label": { "type": "string", "minLength": 1 },
-          "font_sizes": { "$ref": "common.schema.json#/$defs/fontSizes" },
-          "sublabel": { "type": "string" },
-          "tag": { "type": "string" },
-          "icon": { "$ref": "common.schema.json#/$defs/nodeIcon" },
-          "brand": { "$ref": "common.schema.json#/$defs/brandMark" },
-          "sources": { "$ref": "common.schema.json#/$defs/sourceReferences" },
-          "row": { "type": "integer", "minimum": 0 },
-          "col": { "type": "integer", "minimum": 0 },
-          "pos": { "$ref": "common.schema.json#/$defs/point" },
+          "id": {
+            "$ref": "common.schema.json#/$defs/id"
+          },
+          "type": {
+            "$ref": "common.schema.json#/$defs/componentType"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "font_sizes": {
+            "$ref": "common.schema.json#/$defs/fontSizes"
+          },
+          "sublabel": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "icon": {
+            "$ref": "common.schema.json#/$defs/nodeIcon"
+          },
+          "brand": {
+            "$ref": "common.schema.json#/$defs/brandMark"
+          },
+          "sources": {
+            "$ref": "common.schema.json#/$defs/sourceReferences"
+          },
+          "row": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "col": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pos": {
+            "$ref": "common.schema.json#/$defs/point"
+          },
           "size": {
             "type": "array",
             "prefixItems": [
-              { "type": "number", "exclusiveMinimum": 0 },
-              { "type": "number", "exclusiveMinimum": 0 }
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
             ],
             "items": false,
             "minItems": 2,
@@ -112,18 +246,65 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["kind", "label", "wraps"],
+        "required": [
+          "kind",
+          "label",
+          "wraps"
+        ],
         "properties": {
-          "kind": { "enum": ["region", "security-group"] },
-          "font_sizes": { "$ref": "common.schema.json#/$defs/fontSizes" },
-          "label": { "type": "string", "minLength": 1 },
+          "kind": {
+            "enum": [
+              "region",
+              "security-group"
+            ]
+          },
+          "font_sizes": {
+            "$ref": "common.schema.json#/$defs/fontSizes"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
           "wraps": {
             "type": "array",
             "minItems": 1,
-            "items": { "$ref": "common.schema.json#/$defs/id" }
+            "items": {
+              "$ref": "common.schema.json#/$defs/id"
+            }
           },
-          "labelOffset": { "$ref": "common.schema.json#/$defs/point", "description": "Title offset [dx, dy] from its automatic position; moves only the title, not the boundary frame." },
-          "pad": { "type": "number", "minimum": 0 }
+          "labelOffset": {
+            "$ref": "common.schema.json#/$defs/point",
+            "description": "Title offset [dx, dy] from its automatic position; moves only the title, not the boundary frame."
+          },
+          "pad": {
+            "type": "number",
+            "minimum": 0
+          },
+          "bounds": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            ],
+            "items": false,
+            "minItems": 4,
+            "maxItems": 4,
+            "description": "Explicit frame [x,y,width,height], authoritative over member-derived geometry."
+          }
         }
       }
     },
@@ -132,30 +313,113 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["from", "to"],
+        "required": [
+          "from",
+          "to"
+        ],
         "properties": {
-          "id": { "$ref": "common.schema.json#/$defs/id" },
-          "from": { "$ref": "common.schema.json#/$defs/id" },
-          "to": { "$ref": "common.schema.json#/$defs/id" },
-          "label": { "type": "string" },
-          "labelColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Explicit connection label color; omit to follow the theme." },
-          "font_sizes": { "$ref": "common.schema.json#/$defs/fontSizes" },
-          "variant": { "$ref": "common.schema.json#/$defs/variant" },
-          "fromSide": { "$ref": "common.schema.json#/$defs/side" },
-          "toSide": { "$ref": "common.schema.json#/$defs/side" },
-          "route": { "enum": ["auto", "straight", "orthogonal-h", "orthogonal-v"] },
+          "id": {
+            "$ref": "common.schema.json#/$defs/id"
+          },
+          "from": {
+            "$ref": "common.schema.json#/$defs/id"
+          },
+          "to": {
+            "$ref": "common.schema.json#/$defs/id"
+          },
+          "label": {
+            "type": "string"
+          },
+          "labelColor": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Explicit connection label color; omit to follow the theme."
+          },
+          "font_sizes": {
+            "$ref": "common.schema.json#/$defs/fontSizes"
+          },
+          "variant": {
+            "$ref": "common.schema.json#/$defs/variant"
+          },
+          "fromSide": {
+            "$ref": "common.schema.json#/$defs/side"
+          },
+          "toSide": {
+            "$ref": "common.schema.json#/$defs/side"
+          },
+          "route": {
+            "enum": [
+              "auto",
+              "straight",
+              "orthogonal-h",
+              "orthogonal-v"
+            ]
+          },
           "via": {
             "type": "array",
-            "items": { "$ref": "common.schema.json#/$defs/point" }
+            "items": {
+              "$ref": "common.schema.json#/$defs/point"
+            }
           },
-          "labelAt": { "$ref": "common.schema.json#/$defs/point" },
-          "labelDx": { "type": "number" },
-          "labelDy": { "type": "number" },
-          "labelSegment": { "type": "integer", "minimum": 0 },
-          "width": { "$ref": "common.schema.json#/$defs/relationshipWidth" }
+          "labelAt": {
+            "$ref": "common.schema.json#/$defs/point"
+          },
+          "labelDx": {
+            "type": "number"
+          },
+          "labelDy": {
+            "type": "number"
+          },
+          "labelSegment": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "width": {
+            "$ref": "common.schema.json#/$defs/relationshipWidth"
+          },
+          "fromPort": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Normalized attachment [x,y] on the component perimeter, maintained by the draw.io editor."
+          },
+          "toPort": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            ],
+            "items": false,
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "Normalized attachment [x,y] on the component perimeter, maintained by the draw.io editor."
+          }
         }
       }
     },
-    "cards": { "$ref": "common.schema.json#/$defs/cards" }
+    "cards": {
+      "$ref": "common.schema.json#/$defs/cards"
+    }
   }
 }

@@ -78,7 +78,7 @@ test('animation delay is capped without changing normal authored order', () => {
 test('only the WebM canvas scene opts into a repeatable finite motion timeline', () => {
   assert.match(template, /var motionScene = createMotionScene\(svg\)/);
   assert.match(template, /drawMotionFrame\(ctx, backgroundImage, motionScene, elapsed\)/);
-  assert.match(template, /var data = serializeSvg\(scale\);/);
+  assert.match(template, /var data = serializeSvg\(scale, \{ transparentBackground: options\.transparentBackground === true \}\);/);
   assert.match(template, /getPointAtLength/);
   assert.doesNotMatch(template, /serializeSvg\(1, \{ autoTheme: true, motion: true \}\)/);
 });

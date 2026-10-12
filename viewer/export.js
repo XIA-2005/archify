@@ -461,7 +461,7 @@
       function exportScale(options, fallback, width, height) {
         if (!options || options.scale == null || options.scale === 'auto') return fallback;
         var scale = Number(options.scale);
-        if ([1, 2, 3, 4].indexOf(scale) === -1) {
+        if ([1, 3, 5, 7, 10].indexOf(scale) === -1) {
           var invalid = exportError('viewer.export.error.scale'); invalid.archifyExportSize = true; throw invalid;
         }
         if (Math.ceil(width * scale) * Math.ceil(height * scale) > MAX_CANVAS_PIXELS ||

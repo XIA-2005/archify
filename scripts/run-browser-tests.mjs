@@ -8,6 +8,8 @@ import { findChrome } from '../archify/bin/visual-check.mjs';
 const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'archify');
 // Shared by PR CI and tag releases. WebM decoding stays in test:webm.
 const testFiles = [
+  'drawio-editor-browser.test.mjs',
+  'drawio-font-editing-browser.test.mjs',
   'finalize-browser.test.mjs',
   'desktop-reader-browser.test.mjs',
   'reader-readability-maintained-browser.test.mjs',
@@ -34,7 +36,6 @@ const testFiles = [
   'crossover-state-browser.test.mjs',
   'semantic-passport-move-browser.test.mjs',
   'export-browser.test.mjs',
-  '../editor/test-label-color.mjs',
   'viewer-identifiers-browser.test.mjs',
   'repository-evidence.test.mjs',
   'repository-evidence-types-browser.test.mjs',

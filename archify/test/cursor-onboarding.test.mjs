@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gitTool } from './helpers/git-tool.mjs';
+import { buildSourceArchive } from './helpers/source-archive.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const skillRoot = path.resolve(__dirname, '..');
@@ -52,7 +54,8 @@ test('the zero-dependency archive works from the canonical Cursor-visible agent 
   const agentSkills = path.join(tmp, '.agents', 'skills');
   try {
     fs.mkdirSync(agentSkills, { recursive: true });
-    execFileSync('unzip', ['-q', path.join(repoRoot, 'archify.zip'), '-d', agentSkills]);
+    const archive=buildSourceArchive(repoRoot,path.join(tmp,'archive'));
+    execFileSync(gitTool('unzip'), ['-q', archive, '-d', agentSkills]);
     const installed = path.join(agentSkills, 'archify');
     const cli = path.join(installed, 'bin', 'archify.mjs');
     const doctor = execFileSync(process.execPath, [cli, 'doctor'], { encoding: 'utf8' });

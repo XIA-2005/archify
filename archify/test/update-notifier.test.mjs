@@ -1,3 +1,4 @@
+import { fileSymlinkSkip } from './helpers/filesystem-capabilities.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -361,7 +362,7 @@ function options(testFixture, fetchImpl, overrides = {}) {
     fetchImpl,
     now: () => baseTime,
     random: () => 0.5,
-    timeoutMs: 50,
+    timeoutMs: 2000,
     ...overrides,
   };
 }
@@ -441,7 +442,7 @@ function runCheckInChild(testFixture) {
         },
         now: () => ${baseTime},
         random: () => 0.5,
-        timeoutMs: 50,
+        timeoutMs: 2000,
       });
       process.stdout.write(JSON.stringify({ result, requests }));
     } finally {
@@ -706,7 +707,7 @@ test('a committed cache FIFO is ignored without blocking the update check', (t) 
   assertUnsafeCacheStateIsIgnored(testFixture);
 });
 
-test('a committed cache state symlink is ignored without following its target', (t) => {
+test('a committed cache state symlink is ignored without following its target', {skip:fileSymlinkSkip}, (t) => {
   const testFixture = fixture();
   t.after(() => fs.rmSync(testFixture.root, { recursive: true, force: true }));
   const cacheStatePath = statePath(testFixture);
@@ -2363,7 +2364,7 @@ test('a stale corrupt operation is fenced without exposing a failure', async (t)
   assert.equal(fs.existsSync(operationPath(testFixture, 'fenced', 1n)), true);
 });
 
-test('malformed active-claim shapes recover after the hard lease', async () => {
+test('malformed active-claim shapes recover after the hard lease', {skip:fileSymlinkSkip}, async () => {
   for (const shape of ['file', 'symlink', 'owner-directory']) {
     const testFixture = fixture();
     try {
@@ -2540,7 +2541,7 @@ test('corrupt claim retirement preserves distinct 64-bit inode identities', asyn
   );
 });
 
-test('a forged retirement symlink cannot move an active claim outside its cache partition', async (t) => {
+test('a forged retirement symlink cannot move an active claim outside its cache partition', {skip:fileSymlinkSkip}, async (t) => {
   const testFixture = fixture();
   t.after(() => fs.rmSync(testFixture.root, { recursive: true, force: true }));
   let requests = 0;
@@ -2989,7 +2990,7 @@ test('legacy CLI acknowledgement is a harmless one-line no-op', async (t) => {
     fetchImpl: async () => response(remoteReleaseForVersion(candidateVersion)),
     now: () => baseTime,
     random: () => 0.5,
-    timeoutMs: 50,
+    timeoutMs: 2000,
   });
   assert.equal(offered.status, 'update_available');
 

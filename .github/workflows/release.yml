@@ -117,20 +117,18 @@ jobs:
             }
           ' "${GITHUB_REF_NAME#v}"
       - name: Build skill archive
-        run: scripts/build-zip.sh /tmp/archify-built.zip
+        run: scripts/build-zip.sh "$RUNNER_TEMP/archify.zip"
       - name: Validate the exact release archive without installing dependencies
         run: |
           set -euo pipefail
           package_root="$RUNNER_TEMP/archify-release-package"
           mkdir -p "$package_root"
-          unzip -q /tmp/archify-built.zip -d "$package_root"
+          unzip -q "$RUNNER_TEMP/archify.zip" -d "$package_root"
           node scripts/package-smoke.mjs "$package_root/archify"
-      - name: Committed zip must match the build (same gate as CI)
-        run: cmp -s /tmp/archify-built.zip archify.zip
       - name: Create GitHub Release with the zip attached
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
-          files: archify.zip
+          files: ${{ runner.temp }}/archify.zip
           generate_release_notes: true
           prerelease: ${{ steps.release-kind.outputs.prerelease }}
           make_latest: ${{ steps.release-kind.outputs.make_latest }}

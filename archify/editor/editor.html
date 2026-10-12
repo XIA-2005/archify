@@ -242,17 +242,13 @@
           aria-label="架构图小地图，点击定位，方向键平移视口"></canvas>
       </div>
     </div>
-    <details class="hint"><summary>操作帮助 · 拖动节点 / 滚轮缩放 / Shift 平移</summary><div class="hint-body">鼠标拖动模块或分组标题调整位置；点击模块或连线编辑属性；点击“连接节点”再依次点击源节点、目标节点。
-      滚轮缩放；Shift + 拖动空白处平移。连线路径与标签位置由 Archify 正式渲染器计算；
-      Ctrl + 点击多选模块，再使用对齐工具。选中连线后可设置起止边、走线模式、折点和标签位置；
-      选中连线后，拖橙色圆点编辑折点、菱形把手移动整段正交线、方形把手改变端点方向、绿色把手移动标签；
-      Alt+点击或双击连线插入正交绕行折点，选中折点后 Delete 删除；Shift 拖折点锁定单轴。
-      自动布局先以蓝色虚线框预览节点新位置，应用后才改变 JSON 并重新请求官方连线路由；
-      已有手动折点、端点方向和标签坐标原样保留，可能需要再手动调整。
-      大图模式提供小地图、模块搜索定位和视口裁剪；缩小到全图时隐藏部分文字以保持流畅。
-       文字字号逐段编辑，保存时仍须通过 Showcase 校验。
-      大图模式不会改变 JSON，也不会跳过 Archify 官方路由验证。
-      渲染异常时，旧线路以虚线标示为参考，不会全部消失。</div></details>
+    <details class="hint"><summary>操作帮助 · draw.io 原生线条 / 框架编辑</summary><div class="hint-body">
+      悬停模块后拖动连接箭头创建连线；选中线条后拖动端点重连、拖动线段与折点改变路径，右键使用原生菜单。
+      双击编辑文字。选中模块或框架后拖动边角控制柄缩放；拖动框架会移动其内部模块。
+      框选、多选、对齐参考线、画布平移和缩放使用 draw.io 原生交互。Ctrl+Z 撤销，Ctrl+Y 重做。
+      修改先保存在浏览器；“保存并生成 HTML”执行 Archify 的完整校验。原 JSON 自动备份。
+      当前 JSON 适配支持架构模块、连线与框架；悬空线及任意曲线、样式、嵌套分组不属于已验证的保存范围。
+    </div></details>
   </section>
   <aside id="inspector">
     <button id="inspector-close" aria-label="关闭属性检查器">关闭</button>
@@ -275,6 +271,7 @@ import {
   deleteOrthogonalVertex, nearestSide, sideMidpoint,
 } from './orthogonal-tools.mjs';
 import {planAutoLayout, applyAutoLayout} from './auto-layout.mjs';
+import {createDrawioAdapter} from './drawio-adapter.mjs';
 import {normalizeSceneGeometry} from './scene-normalize.mjs';
 import {componentTextGeometry,labelGeometry} from './shared/text-style.mjs';
 import {renderCards,arrowGeometry} from './shared/utils.mjs';
@@ -307,8 +304,23 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
   let selectedNodes = new Set(), selectedHandle = null, layoutPreview = null;
   let bigMode = false, bigModeOverride = false, lastDrawSignature = null, viewportFrame = 0;
   let searchMatches = [], searchCursor = -1, minimapDragging = false;
+  let drawio = null;
+  const drawioFrame = document.createElement('iframe');
+  drawioFrame.id='drawio-canvas';drawioFrame.title='draw.io 线条与框架编辑画布';
+  drawioFrame.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:0;z-index:2';
+  drawioFrame.hidden=false;
+  svg.parentElement.appendChild(drawioFrame);
+  drawio=createDrawioAdapter(drawioFrame,{
+    change(next){if(saving)return;const before=clone(spec);spec=next;checkpoint(before);draw();renderInspector();},
+    select(cells){selectedNodes=new Set(cells.filter(c=>c.kind==='node').map(c=>c.id));selected=cells[0]||null;selectedHandle=null;renderInspector();updateButtons();},
+    undo,redo,save(){ $('save').click(); },
+  });
+  drawioFrame.src=new URL('drawio-frame.html',location.href);
+  drawio.ready.then(()=>{svg.style.visibility='hidden';drawio.ui.refresh();drawio.theme(document.documentElement.dataset.theme);drawio.load(spec,renderedRoutes,officialScene);})
+    .catch(error=>status('draw.io 编辑引擎加载失败：'+error.message,'error'));
   function applyEditorTheme(theme) {
     document.documentElement.dataset.theme=theme;
+    drawio?.theme(theme);
     $('theme-toggle').textContent=theme==='light'?'深色模式':'浅色模式';
     $('theme-toggle').setAttribute('aria-pressed',String(theme==='light'));
     if(spec) draw(true);
@@ -403,6 +415,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     selected = null; selectedHandle = null; selectedNodes.clear(); draw(); renderInspector(); updateButtons(); markDirty();
   }
   function updateButtons() {
+    drawio?.setEnabled(!saving && !layoutPreview);
     $('undo').disabled = !history.length || saving;
     $('redo').disabled = !future.length || saving;
     $('delete').disabled = (!selected && !selectedNodes.size) || saving || Boolean(layoutPreview);
@@ -435,7 +448,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       else if (!selectedNodes.has(id) || selectedNodes.size < 2) selectedNodes = new Set([id]);
       selected = selectedNodes.size ? {kind:'node',id:selectedNodes.has(id)?id:[...selectedNodes][0]} : null;
     } else { selectedNodes.clear(); selected = kind ? {kind,id} : null; }
-    renderInspector(); updateButtons(); draw();
+    renderInspector(); updateButtons(); draw();drawio?.select(kind,id);
   }
   function setMode(next) {
     mode = next; linkStart = null; updateButtons();
@@ -575,6 +588,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     camera.x=b.x+b.w/2-camera.w/2;
     camera.y=b.y+b.h/2-camera.h/2;
     select('node',node.id);
+    drawio?.focus(node.id);
     text($('search-count'),`${searchCursor+1}/${searchMatches.length}：${node.label||node.id}`);
     status('已定位模块：'+(node.label||node.id)+' ('+node.id+')；候选 JSON 未改变。','ok');
   }
@@ -623,11 +637,13 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     const p=minimapProjection(spec.components);
     const [x,y]=p.toWorld((event.clientX-rect.left)*210/rect.width,
       (event.clientY-rect.top)*140/rect.height);
+    drawio?.panTo(x,y);
     cameraFitted=false;
     camera.x=x-camera.w/2;camera.y=y-camera.h/2;
     setCamera();scheduleViewportDraw();
   }
   function zoom(factor) {
+    if(drawio?.graph){drawio.zoom(factor);return;}
     cameraFitted=false;
     if (!camera) return;
     const oldW=camera.w,oldH=camera.h;
@@ -776,6 +792,9 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
   }
   function draw(viewOnly=false) {
     if (!spec) return;
+    drawio?.load(layoutPreview?applyAutoLayout(spec,layoutPreview.plan):spec,
+      !layoutPreview&&routeSignature===routeKey()?renderedRoutes:null,
+      !layoutPreview&&routeSignature===routeKey()?officialScene:null);
     if (!bigModeOverride) bigMode=spec.components.length>=LARGE_GRAPH_THRESHOLD;
     if (!viewOnly && viewportFrame) {cancelAnimationFrame(viewportFrame);viewportFrame=0;}
     frame(false);setCamera();
@@ -962,39 +981,56 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       if(type==='number'&&!Number.isFinite(val))return;
       const before=clone(spec);
       try{onChange(val);if(selected?.kind==='edge')selectedHandle=null;
-        checkpoint(before);normalizeScene();draw();renderInspector();}
+        checkpoint(before);if(type!=='text')normalizeScene();draw();renderInspector();}
       catch(error){spec=before;status('输入无效：'+error.message,'error');renderInspector();}
     });
     return input;
   }
   const legendLabels={frontend:'前端',backend:'后端',database:'数据库',cloud:'云服务',security:'安全',messagebus:'消息总线',external:'外部系统'};
-  function fontControl(name,value,fallback,onChange) {
+  function fontControl(name,value,fallback,onChange,category=null) {
     const label=dom('label','field font-control',name+' (px)',panel);
     const input=dom('input','',null,label);
     input.type='number';input.min='6';input.max='72';input.step='0.5';
-    input.value=value??'';input.placeholder=String(fallback);
+    input.value=String(value??fallback);input.placeholder=String(fallback);
     input.dataset.fontControl=name;
     const change=v=>{
-      if(v!=null&&(!Number.isFinite(v)||v<6||v>72||!Number.isInteger(v*2))){status('字号应为 6–72px，步长 0.5。','error');input.value=value??'';return;}
-      const before=clone(spec);onChange(v);checkpoint(before);normalizeScene();draw();renderInspector();
+      if(v!=null&&(!Number.isFinite(v)||v<6||v>72||!Number.isInteger(v*2))){status('字号应为 6–72px，步长 0.5。','error');input.value=String(value??fallback);return;}
+      const before=clone(spec);onChange(v);checkpoint(before);draw();renderInspector();
     };
     input.onchange=()=>change(input.value===''?null:input.valueAsNumber);
-    const reset=dom('button','', '恢复默认',label);reset.type='button';reset.onclick=()=>change(null);
+    const apply=dom('button','', '一键设置',label);apply.type='button';
+    apply.dataset.applyFontCategory=category||'single';
+    apply.title=category?'将此字号应用到所有'+fontCategories.find(([key])=>key===category)[1]:'设置此字号';
+    apply.onpointerdown=event=>event.preventDefault();
+    apply.onclick=()=>{
+      const size=input.value===''?fallback:input.valueAsNumber,before=clone(spec);
+      try {
+        if(!Number.isFinite(size)||size<6||size>72||!Number.isInteger(size*2))throw Error('字号应为 6–72px，步长 0.5。');
+        const count=category?setCategoryFont(spec,category,size):(onChange(size),1);
+        if(JSON.stringify(before)!==JSON.stringify(spec)){checkpoint(before);draw();renderInspector();}
+        status('已设置 '+count+' 段'+(category?fontCategories.find(([key])=>key===category)[1]:'文字')+'字号为 '+size+'px。');
+      }catch(error){status(error.message,'error');}
+    };
   }
   function fontProperty(name,owner,key,fallback) {
+    const category=spec.components.includes(owner)?'node-'+key
+      :spec.connections.includes(owner)?'edge-label'
+      :(spec.boundaries||[]).includes(owner)?'boundary-label'
+      :(spec.cards||[]).includes(owner)?'card-title':null;
     fontControl(name,owner.font_sizes?.[key],fallback,v=>{
       if(v==null){delete owner.font_sizes?.[key];if(owner.font_sizes&&!Object.keys(owner.font_sizes).length)delete owner.font_sizes;}
       else {owner.font_sizes ||= {};owner.font_sizes[key]=v;}
-    });
+    },category);
   }
   function itemFontProperty(card,index) {
     fontControl('正文 '+(index+1)+' 字号',card.font_sizes?.items?.[index],13,v=>{
       card.font_sizes ||= {};card.font_sizes.items ||= card.items.map(()=>null);
       card.font_sizes.items[index]=v;
       if(card.font_sizes.items.every(v=>v==null))delete card.font_sizes.items;
-    });
+    },'card-items');
   }
   function applyFontPreview() {
+    drawio?.previewFonts(fontPreviewCategory);
     for(const el of document.querySelectorAll('.font-preview'))el.classList.remove('font-preview');
     const category=fontPreviewCategory;
     const mark=el=>el?.classList.add('font-preview');
@@ -1126,11 +1162,11 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       const n=findNode(selected.id);
       if(n){
         dom('h3','', '模块：'+n.id,panel);
-        property('模块名称',n.label,v=>n.label=v);
+        property('模块名称',n.label,v=>n.label=v,'text');
         fontProperty('模块名称字号',n,'label',componentTextGeometry(n).sizes.label);
-        property('模块说明',n.sublabel||'',v=>n.sublabel=v);
+        property('模块说明',n.sublabel||'',v=>n.sublabel=v,'text');
         fontProperty('模块说明字号',n,'sublabel',componentTextGeometry(n).sizes.sublabel);
-        property('模块标签',n.tag||'',v=>n.tag=v);
+        property('模块标签',n.tag||'',v=>n.tag=v,'text');
         fontProperty('模块标签字号',n,'tag',componentTextGeometry(n).sizes.tag);
         property('模块类型',n.type,v=>n.type=v,'select');
         property('位置 X',boxOf(n).x,v=>n.pos[0]=v,'number');
@@ -1143,7 +1179,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       const e=findEdge(selected.id);
       if(e){
         dom('h3','', '连接：'+(e.id||selected.id),panel);
-        property('连线文字',e.label||'',v=>e.label=v).dataset.edgeLabelInput='true';
+        property('连线文字',e.label||'',v=>e.label=v,'text').dataset.edgeLabelInput='true';
         fontProperty('连线文字字号',e,'label',8);
         const colorField=property('连线文字颜色',e.labelColor||'',v=>{
           const color=v.trim();
@@ -1222,7 +1258,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
         const reset=dom('button','', '恢复自动布线（清除折点/边约束）',tools);
         reset.dataset.action='reset-route';
         reset.addEventListener('click',()=>{checkpoint();delete e.fromSide;delete e.toSide;
-          delete e.via;delete e.labelAt;e.route='auto';selectedHandle=null;draw();renderInspector();});
+          delete e.via;delete e.labelAt;delete e.fromPort;delete e.toPort;e.route='auto';selectedHandle=null;draw();renderInspector();});
         ['from','to'].forEach(key=>{
           const label=dom('label','field',key==='from'?'起点':'终点',panel);
           const input=dom('select','',null,label);
@@ -1254,8 +1290,13 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     if(selected?.kind==='boundary') {
       const b=spec.boundaries[selected.id];
       if(b){
+        dom('h3','', '框架位置与尺寸（draw.io 原生拖动/缩放）',panel);
+        if(b.bounds)for(const [i,name]of ['框架 X','框架 Y','框架宽度','框架高度'].entries())
+          property(name,b.bounds[i],v=>{if(v<0||(i>=2&&v===0))throw Error('框架位置不能为负，尺寸必须大于零');b.bounds[i]=v;},'number');
+        const autoFrame=dom('button','', '恢复按成员自动计算框架',panel);
+        autoFrame.onclick=()=>{if(!b.bounds)return;checkpoint();delete b.bounds;draw();renderInspector();};
         dom('h3','', '分组标题位置（可直接拖动文字）',panel);
-        property('分组标题',b.label,v=>b.label=v);fontProperty('分组标题字号',b,'label',9);
+        property('分组标题',b.label,v=>b.label=v,'text');fontProperty('分组标题字号',b,'label',9);
         const setOffset=(axis,v)=>{const offset=[...(b.labelOffset||[0,0])];offset[axis]=v;b.labelOffset=offset;};
         property('标题水平偏移 (px)',b.labelOffset?.[0]??0,v=>setOffset(0,v),'number');
         property('标题垂直偏移 (px)',b.labelOffset?.[1]??0,v=>setOffset(1,v),'number');
@@ -1274,7 +1315,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
         spec.meta.legend.entries[selected.id] ||= {};
         if(v==null)delete spec.meta.legend.entries[selected.id].font_size;
         else spec.meta.legend.entries[selected.id].font_size=v;
-      });
+      },'legend');
     }
     dom('h3','', '分组与图例',panel);
     (spec.boundaries||[]).forEach((b,i)=>{const btn=dom('button','',b.label,panel);btn.onclick=()=>select('boundary',i);});
@@ -1304,6 +1345,10 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     select('card',spec.cards.length-1);
   }
   function removeSelected() {
+    if(drawio?.graph && ['node','edge','boundary'].includes(selected?.kind)){
+      if(saving||layoutPreview)return;drawio.graph.removeCells(drawio.graph.getSelectionCells());
+      selected=null;selectedNodes.clear();renderInspector();updateButtons();return;
+    }
     if(!selected)return;
     checkpoint();
     if(selected.kind==='node') {
@@ -1497,10 +1542,13 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
   });
   svg.addEventListener('wheel',(e)=>{e.preventDefault();zoom(e.deltaY<0?.9:1.1);},{passive:false});
   $('undo').onclick=undo;$('redo').onclick=redo;
-  $('select').onclick=()=>setMode('select');$('link').onclick=()=>setMode('link');
+  $('select').onclick=()=>setMode('select');$('link').onclick=()=>{
+    if(drawio?.graph){setMode('select');drawio.graph.container.focus();status('在模块上悬停，再拖动 draw.io 连接箭头到目标模块。');}
+    else setMode('link');
+  };
   $('add-node').onclick=addNode;$('add-card').onclick=addCard;$('delete').onclick=removeSelected;
   $('zoom-in').onclick=()=>zoom(.82);$('zoom-out').onclick=()=>zoom(1.22);
-  $('fit').onclick=()=>{camera=null;frame(true);draw();};
+  $('fit').onclick=()=>{drawio?.fit();camera=null;frame(true);draw();};
   $('big-mode').onclick=()=>{
     bigModeOverride=true;bigMode=!bigMode;draw(true);
     status(bigMode?'大图模式已开启：视口裁剪、细节层级和小地图生效。'
@@ -1636,6 +1684,8 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     finally{$('export-image').disabled=false;}
   };
   $('export').onclick=()=>{
+    const unsupported=drawio?.unsupportedIssues()||[];
+    if(unsupported.length){status('这些 draw.io 操作尚不能无损保存为 Archify JSON：'+unsupported.join('、')+'。请恢复对应样式，或通过画布“文件”菜单导出 draw.io 源文件。','error');return;}
     const blob=new Blob([JSON.stringify(spec,null,2)+'\n'],{type:'application/json'});
     const url=URL.createObjectURL(blob),a=document.createElement('a');
     a.href=url;a.download='candidate-visual-draft.json';document.body.appendChild(a);a.click();a.remove();
@@ -1643,6 +1693,8 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
   };
   $('save').onclick=async()=>{
     if(saving || layoutPreview)return;
+    const unsupported=drawio?.unsupportedIssues()||[];
+    if(unsupported.length){status('保存未执行：这些 draw.io 操作尚未完整适配：'+unsupported.join('、')+'。请恢复对应样式，或通过画布“文件”菜单导出 draw.io 源文件。','error');return;}
     saving=true;updateButtons();status('正在校验并重新生成正式 HTML…');
     try {
       const response=await fetch(new URL('api/save',location.href),{

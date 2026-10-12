@@ -1,3 +1,4 @@
+import { gitTool } from './helpers/git-tool.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -6,10 +7,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { stageCleanSkill } from '../../scripts/stage-clean-skill.mjs';
+import { stageSourceSkill, sourceGitEnvironment } from './helpers/source-index.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..');
+
 const canonicalZipNodeMajor = 22;
 const canonicalZipZlibVersion = '1.3.1-e00f703';
 const currentNodeMajor = Number(process.versions.node.split('.')[0]);
@@ -53,11 +55,11 @@ function spawnBuildZip(outputPath, options = {}) {
 }
 
 function preparePackageIndex(indexPath, extraPaths) {
-  const env = { ...process.env, GIT_INDEX_FILE: indexPath };
+  const env = { ...process.env, ...sourceGitEnvironment(repoRoot), GIT_INDEX_FILE: indexPath };
   let result = spawnSync('git', ['read-tree', 'HEAD'], { cwd: repoRoot, env, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   result = spawnSync('git', ['rev-parse', 'HEAD:archify/LICENSE'], {
-    cwd: repoRoot,
+    cwd: repoRoot, env,
     encoding: 'utf8',
   });
   assert.equal(result.status, 0, result.stderr);
@@ -96,6 +98,17 @@ function assertPinnedAction(section, action, sha, version) {
   );
 }
 
+test('ZIP distribution is built on demand instead of tracked in the repository',()=>{
+  const tracked=spawnSync('git',['ls-files','--','archify.zip'],{cwd:repoRoot,env:{...process.env,...sourceGitEnvironment(repoRoot)},encoding:'utf8'});
+  assert.equal(tracked.status,0,tracked.stderr);assert.equal(tracked.stdout.trim(),'');
+  assert.match(fs.readFileSync(path.join(repoRoot,'.gitignore'),'utf8'),/^\/archify\.zip$/m);
+  const ci=fs.readFileSync(path.join(repoRoot,'.github/workflows/ci.yml'),'utf8');
+  const reproducibility=workflowJob(ci,'zip-freshness');
+  assert.match(reproducibility,/cmp -s \/tmp\/fresh\.zip \/tmp\/repeated\.zip/);
+  assert.match(workflowJob(ci,'package-smoke'),/scripts\/build-zip\.sh "\$RUNNER_TEMP\/archify-package\.zip"/);
+  assert.doesNotMatch(reproducibility,/cmp[^\n]* archify\.zip/);
+});
+
 test('release prevents manifest preannouncement and smokes the exact archive before upload', () => {
   const workflow = fs.readFileSync(path.join(repoRoot, '.github', 'workflows', 'release.yml'), 'utf8');
   const tagFetch = workflowStep(workflow, 'Fetch exact tag object');
@@ -104,7 +117,6 @@ test('release prevents manifest preannouncement and smokes the exact archive bef
   const publicationOrder = workflowStep(workflow, 'Stable notifier manifest must remain on the previous release');
   const build = workflowStep(workflow, 'Build skill archive');
   const smoke = workflowStep(workflow, 'Validate the exact release archive without installing dependencies');
-  const freshness = workflowStep(workflow, 'Committed zip must match the build (same gate as CI)');
   const upload = workflowStep(workflow, 'Create GitHub Release with the zip attached');
   const followUp = workflowStep(workflow, 'Record stable notifier publication follow-up');
 
@@ -114,8 +126,7 @@ test('release prevents manifest preannouncement and smokes the exact archive bef
   assert.ok(workflow.indexOf(annotatedTagGate) < workflow.indexOf(publicationOrder), 'annotated-tag gate must precede the publication-order gate');
   assert.ok(workflow.indexOf(publicationOrder) < workflow.indexOf(build), 'manifest preannouncement must fail before the release build');
   assert.ok(workflow.indexOf(build) < workflow.indexOf(smoke), 'release smoke must follow the archive build');
-  assert.ok(workflow.indexOf(smoke) < workflow.indexOf(freshness), 'release smoke must inspect the built archive before comparison');
-  assert.ok(workflow.indexOf(freshness) < workflow.indexOf(upload), 'freshness must pass before release upload');
+  assert.ok(workflow.indexOf(smoke) < workflow.indexOf(upload), 'release smoke must pass before uploading the generated archive');
   assert.ok(workflow.indexOf(upload) < workflow.indexOf(followUp), 'manifest follow-up must be recorded only after Release creation');
 
   assert.match(tagFetch, /git fetch --force --no-tags origin/);
@@ -127,18 +138,18 @@ test('release prevents manifest preannouncement and smokes the exact archive bef
   assert.match(annotatedTagGate, /stable releases require an annotated tag/);
   assert.match(publicationOrder, /compareSemver\(published\.version, releasing\) >= 0/);
   assert.match(publicationOrder, /publish the manifest in a follow-up commit/);
-  assert.match(build, /run: scripts\/build-zip\.sh \/tmp\/archify-built\.zip/);
-  assert.match(smoke, /unzip -q \/tmp\/archify-built\.zip -d "\$package_root"/);
+  assert.match(build, /run: scripts\/build-zip\.sh "\$RUNNER_TEMP\/archify\.zip"/);
+  assert.match(smoke, /unzip -q "\$RUNNER_TEMP\/archify\.zip" -d "\$package_root"/);
   assert.match(smoke, /node scripts\/package-smoke\.mjs "\$package_root\/archify"/);
   assert.doesNotMatch(smoke, /\bnpm\s+(?:ci|install)\b/);
-  assert.match(freshness, /cmp -s \/tmp\/archify-built\.zip archify\.zip/);
   assertPinnedAction(
     upload,
     'softprops/action-gh-release',
     'efb35369e0ad2afab669f228072c1b0d510eae64',
     'v3.0.3',
   );
-  assert.match(upload, /files: archify\.zip/);
+  assert.match(upload, /files: \$\{\{ runner\.temp \}\}\/archify\.zip/);
+  assert.doesNotMatch(workflow, /Committed zip must match/);
   assert.match(followUp, /docs\/skill-updates\/archify\/stable\.json/);
 });
 
@@ -199,7 +210,7 @@ test('CI binds a public notifier manifest to the Release asset, tagged archive, 
   assert.match(job, /--source-ref "v\$\{manifest_version\}"/);
   assert.match(job, /git worktree add --detach "\$tag_checkout" "v\$\{manifest_version\}"/);
   assert.match(job, /"\$tag_checkout\/scripts\/build-zip\.sh" "\$rebuilt_archive"/);
-  assert.match(job, /cmp -s "\$rebuilt_archive" "\$tagged_archive"/);
+  assert.match(job, /cmp -s "\$published_archive" "\$rebuilt_archive"/);
   assert.match(job, /manifest_version" == "2\.15\.0"/);
   assert.match(job, /missing the deterministic archive builder/);
 });
@@ -347,7 +358,7 @@ test('package smoke rejects a missing or modified distribution license', () => {
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-package-license-gate-'));
   try {
     const staged = path.join(fixture, 'archify');
-    stageCleanSkill({ repoRoot, destination: staged });
+    stageSourceSkill({ repoRoot, destination: staged });
     const licensePath = path.join(staged, 'LICENSE');
 
     fs.rmSync(licensePath);
@@ -381,7 +392,7 @@ test('package smoke rejects missing, modified, or incomplete third-party notices
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-package-notices-gate-'));
   try {
     const staged = path.join(fixture, 'archify');
-    stageCleanSkill({ repoRoot, destination: staged });
+    stageSourceSkill({ repoRoot, destination: staged });
     const noticesPath = path.join(staged, 'THIRD_PARTY_NOTICES.md');
 
     fs.rmSync(noticesPath);
@@ -428,7 +439,7 @@ test('package smoke increments an arbitrary-precision SemVer patch without Numbe
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-package-bigint-version-'));
   const skillRoot = path.join(scratch, 'archify');
   try {
-    stageCleanSkill({ repoRoot, destination: skillRoot });
+    stageSourceSkill({ repoRoot, destination: skillRoot });
     const packagePath = path.join(skillRoot, 'package.json');
     const releasePath = path.join(skillRoot, 'skill-release.json');
     const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
@@ -492,7 +503,7 @@ test('clean package staging rejects non-portable tracked names and entry collisi
     try {
       process.env.GIT_INDEX_FILE = env.GIT_INDEX_FILE;
       assert.throws(
-        () => stageCleanSkill({ repoRoot, destination }),
+        () => stageSourceSkill({ repoRoot, destination }),
         (error) => error?.code === code,
       );
       assert.equal(fs.existsSync(destination), false, 'portable-name rejection must precede staging writes');
@@ -641,7 +652,7 @@ canonicalZipTest('package smoke rejects every dependency metadata field in a bui
 
     const extracted = path.join(fixture, 'extracted');
     fs.mkdirSync(extracted);
-    const unzip = spawnSync('unzip', ['-q', archive, '-d', extracted], { encoding: 'utf8' });
+    const unzip = spawnSync(gitTool('unzip'), ['-q', archive, '-d', extracted], { encoding: 'utf8' });
     assert.equal(unzip.status, 0, `${unzip.stdout}\n${unzip.stderr}`);
     const builtPackage = path.join(extracted, 'archify');
     const dependencyFields = {
@@ -679,7 +690,7 @@ canonicalZipTest('built archives contain the embedded notifier runtime', () => {
     const build = spawnBuildZip(archive);
     assert.equal(build.status, 0, `${build.stdout}\n${build.stderr}`);
 
-    const listing = spawnSync('unzip', ['-Z1', archive], { encoding: 'utf8' });
+    const listing = spawnSync(gitTool('unzip'), ['-Z1', archive], { encoding: 'utf8' });
     assert.equal(listing.status, 0, `${listing.stdout}\n${listing.stderr}`);
     const entries = new Set(listing.stdout.trim().split('\n'));
     assert.ok(entries.has('archify/skill-release.json'));
@@ -711,7 +722,7 @@ canonicalZipTest('archive build excludes untracked files and external symlinks f
     const build = spawnBuildZip(archive);
     assert.equal(build.status, 0, `${build.stdout}\n${build.stderr}`);
 
-    const listing = spawnSync('unzip', ['-Z1', archive], { encoding: 'utf8' });
+    const listing = spawnSync(gitTool('unzip'), ['-Z1', archive], { encoding: 'utf8' });
     assert.equal(listing.status, 0, `${listing.stdout}\n${listing.stderr}`);
     assert.doesNotMatch(listing.stdout, new RegExp(marker), 'untracked files and symlinks must not enter the archive');
   } finally {
@@ -791,7 +802,7 @@ canonicalZipTest('archive build rejects an unmerged index and preserves an exist
     fs.writeFileSync(license, '<<<<<<< ours\n=======\n>>>>>>> theirs\n');
     fs.writeFileSync(archive, trusted);
 
-    const build = spawnSync('bash', [path.join(scripts, 'build-zip.sh'), archive], {
+    const build = spawnSync(gitTool('bash'), [path.join(scripts, 'build-zip.sh'), archive], {
       cwd: fixture,
       encoding: 'utf8',
     });
@@ -862,10 +873,6 @@ canonicalZipTest('archive build is byte-for-byte reproducible across caller time
     assert.ok(
       fs.readFileSync(utcArchive).equals(fs.readFileSync(honoluluArchive)),
       'identical tracked inputs must produce identical archive bytes',
-    );
-    assert.ok(
-      fs.readFileSync(utcArchive).equals(fs.readFileSync(path.join(repoRoot, 'archify.zip'))),
-      'the canonical archive toolchain must reproduce the committed archive bytes',
     );
     assert.deepEqual(
       fs.readdirSync(outputRoot).sort(),

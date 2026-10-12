@@ -128,6 +128,10 @@ function boundaryRect(boundary) {
     maxY = Math.max(maxY, member.y + member.height);
   }
   const pad = boundary.pad ?? layout.boundaryPad;
+  if (boundary.bounds) {
+    const [x,y,width,height] = boundary.bounds;
+    return {...boundary,x,y,width,height,memberTop:minY};
+  }
   const topPad = Math.max(
     pad,
     layout.boundaryLabelBaseline + layout.boundaryLabelClearance,
@@ -221,6 +225,7 @@ function resolvedViewBoxWidth(candidateBoundaries) {
 }
 
 function expandBoundaryForReadableTitle(boundary, minimumFontSize) {
+  if (boundary.bounds) return boundary;
   if (!enforcesBoundaryTitleComposition) return boundary;
   const requiredWidth = boundaryLabelWidth(boundary.label, minimumFontSize)
     + layout.boundaryLabelFrameInset * 2;
@@ -303,7 +308,7 @@ function layoutBoundaryTitles(rawBoundaries, minimumFontSize) {
     // Profile-less schema-v1 inputs keep their legacy boundary geometry. A
     // quality profile opts into the stricter title-composition contract and
     // may expand the frame to contain an adapted title rail.
-    const y = enforcesBoundaryTitleComposition
+    const y = enforcesBoundaryTitleComposition && !boundary.bounds
       ? Math.min(boundary.y, title.y - layout.boundaryLabelFrameInset)
       : boundary.y;
     return {

@@ -406,31 +406,62 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
 
   await t.test('native scale selection renders larger raster and GIF frames and preserves vector/size errors', async () => {
     await load();await run('Archify.exportMenu.open();document.getElementById("export-scale").focus()');
+    assert.deepEqual(await run('[...document.getElementById("export-scale").options].map(o=>o.value)'), ['auto','1','3','5','7','10']);
     await key('Home','Home',36);await key('ArrowDown','ArrowDown',40);await key('ArrowDown','ArrowDown',40);
-    assert.equal(await run('document.getElementById("export-scale").value'),'2');
+    assert.equal(await run('document.getElementById("export-scale").value'),'3');
     assert.equal(await run('Archify.exportMenu.isOpen()'),true);
     const vb=await run(`(()=>{const v=document.querySelector('.diagram-container svg').viewBox.baseVal;return {width:v.width,height:v.height};})()`);
     const dimensions={};
     for(const format of ['png','jpeg','webp']){
       dimensions[format]=[];
-      for(const scale of [1,2]){
+      for(const scale of [1,3]){
         await run(`Archify.exportMenu.run(${JSON.stringify(format)},{scale:${scale}})`);
         const size=await run(`createImageBitmap(exportDownloads.at(-1).blob).then(b=>{const r=[b.width,b.height];b.close();return r;})`);
         dimensions[format].push(size);
       }
-      assert.equal(dimensions[format][1][0],dimensions[format][0][0]*2);
-      assert.equal(dimensions[format][1][1],dimensions[format][0][1]*2);
+      assert.equal(dimensions[format][1][0],dimensions[format][0][0]*3);
+      assert.equal(dimensions[format][1][1],dimensions[format][0][1]*3);
     }
     await run(`Archify.exportMenu.run('gif',{duration:250,fps:8,transparentBackground:true})`);
     const gif=await run(`(async()=>{const blob=exportDownloads.at(-1).blob;window.scaledGif=blob;const decoder=new ImageDecoder({data:await blob.arrayBuffer(),type:'image/gif'});await decoder.tracks.ready;const {image}=await decoder.decode({frameIndex:0});const c=document.createElement('canvas');c.width=image.displayWidth;c.height=image.displayHeight;const x=c.getContext('2d');x.drawImage(image,0,0);const r={width:image.displayWidth,height:image.displayHeight,alpha:x.getImageData(10,10,1,1).data[3],frames:decoder.tracks.selectedTrack.frameCount};image.close();decoder.close();return r;})()`);
-    assert.equal(gif.width,Math.round(vb.width*2));assert.equal(gif.height,Math.round(vb.height*2));assert.equal(gif.alpha,0);assert.equal(gif.frames,2);
+    assert.equal(gif.width,Math.round(vb.width*3));assert.equal(gif.height,Math.round(vb.height*3));assert.equal(gif.alpha,0);assert.equal(gif.frames,2);
     const nativeSvg=await run(`(async()=>{const sources=[...exportUrls.values()].filter(u=>u.blob.type.startsWith('image/svg+xml'));const d=new DOMParser().parseFromString(await sources.at(-1).blob.text(),'image/svg+xml').documentElement;return {width:Number(d.getAttribute('width')),height:Number(d.getAttribute('height'))};})()`);
-    assert.equal(nativeSvg.width,vb.width*2);assert.equal(nativeSvg.height,vb.height*2);
+    assert.equal(nativeSvg.width,vb.width*3);assert.equal(nativeSvg.height,vb.height*3);
     await run(`Archify.exportMenu.run('svg')`);
     assert.equal(await run(`exportDownloads.at(-1).blob.text().then(t=>Number(new DOMParser().parseFromString(t,'image/svg+xml').documentElement.getAttribute('width')))`),vb.width);
-    const oversized=await run(`(()=>{const v=document.querySelector('.diagram-container svg');v.setAttribute('viewBox','0 0 10000 10000');return Archify.exportMenu.run('gif',{scale:4}).then(()=>({error:document.documentElement.getAttribute('data-last-export-error-format'),message:exportAlerts.at(-1)}));})()`);
+    await run(`document.querySelector('.diagram-container svg').setAttribute('viewBox','0 0 100 60')`);
+    let unitSize;
+    for (const scale of [1,3,5,7,10]) {
+      await run(`Archify.exportMenu.run('png',{scale:${scale}})`);
+      const size=await run(`createImageBitmap(exportDownloads.at(-1).blob).then(b=>{const r=[b.width,b.height];b.close();return r;})`);
+      if(scale===1)unitSize=size;
+      assert.deepEqual(size,unitSize.map(n=>n*scale), `${scale}× PNG renders at native resolution`);
+    }
+    for (const scale of [0,2,4,11]) {
+      const count=await run('exportDownloads.length');
+      await run(`Archify.exportMenu.run('png',{scale:${scale}})`);
+      assert.equal(await run('exportDownloads.length'),count);
+      assert.match(await run('exportAlerts.at(-1)'),/1×, 3×, 5×, 7× or 10×/);
+    }
+    for (const format of ['gif','webm']) {
+      await run(`Archify.exportMenu.run('${format}',{scale:10,duration:250,fps:8})`);
+      assert.equal(await run("document.documentElement.getAttribute('data-last-export-format')"),format);
+      const size=await run(`(async()=>{
+        const blob=exportDownloads.at(-1).blob;
+        if('${format}'==='gif') {
+          const decoder=new ImageDecoder({data:await blob.arrayBuffer(),type:'image/gif'});
+          const {image}=await decoder.decode({frameIndex:0});
+          const size=[image.displayWidth,image.displayHeight];image.close();decoder.close();return size;
+        }
+        const url=URL.createObjectURL(blob),video=document.createElement('video');video.src=url;
+        await new Promise((resolve,reject)=>{video.onloadeddata=resolve;video.onerror=reject;});
+        const size=[video.videoWidth,video.videoHeight];video.removeAttribute('src');video.load();URL.revokeObjectURL(url);return size;
+      })()`);
+      assert.deepEqual(size,[1000,600], `${format} decodes at 10× resolution`);
+    }
+    const oversized=await run(`(()=>{const v=document.querySelector('.diagram-container svg');v.setAttribute('viewBox','0 0 10000 10000');return Archify.exportMenu.run('gif',{scale:10}).then(()=>({error:document.documentElement.getAttribute('data-last-export-error-format'),message:exportAlerts.at(-1)}));})()`);
     assert.equal(oversized.error,'gif');assert.match(oversized.message,/lower scale/);
-    if(evidence){const bytes=await run(`scaledGif.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,'scaled-2x.gif'),Buffer.from(bytes));}
+    if(evidence){const bytes=await run(`scaledGif.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,'scaled-3x.gif'),Buffer.from(bytes));}
   });
 
   await t.test('transparent WebM decodes actual alpha and motion with bounded encoder cleanup', async () => {

@@ -54,7 +54,7 @@ test('compare recovery: human diagnostics identify the retained backup and targe
   const directories = fs.readdirSync(data.root).filter((name) => name.startsWith('.archify-compare-'));
   assert.equal(directories.length, 1);
   const recoveryDirectory = path.join(data.root, directories[0]);
-  const backup = path.join(recoveryDirectory, '.previous-output');
+  const backup = path.toNamespacedPath(path.join(recoveryDirectory, '.previous-output'));
   assert.ok(result.stderr.includes(recoveryDirectory));
   assert.ok(result.stderr.includes(JSON.stringify(backup)));
   assert.ok(result.stderr.includes(JSON.stringify(data.targets.html)));
@@ -67,8 +67,9 @@ function inject(data, failures) {
   fs.writeFileSync(preload, `
     const fs = require('node:fs');
     const path = require('node:path');
-    const root = ${JSON.stringify(data.root)};
-    const targets = ${JSON.stringify(data.targets)};
+    const root = path.toNamespacedPath(${JSON.stringify(data.root)});
+    const targets = Object.fromEntries(Object.entries(${JSON.stringify(data.targets)})
+      .map(([key, value]) => [key, path.toNamespacedPath(value)]));
     const wanted = new Set(${JSON.stringify(failures)});
     const fired = new Set();
     const rename = fs.renameSync;
@@ -84,6 +85,8 @@ function inject(data, failures) {
       throw error;
     }
     fs.renameSync = function(source, target) {
+      source = path.toNamespacedPath(source);
+      target = path.toNamespacedPath(target);
       if (inside(source) && inside(target)) {
         if (source === targets.receipt
           && path.basename(path.dirname(target)).startsWith('.archify-remove-')
@@ -103,6 +106,8 @@ function inject(data, failures) {
       return rename.apply(this, arguments);
     };
     fs.linkSync = function(source, target) {
+      source = path.toNamespacedPath(source);
+      target = path.toNamespacedPath(target);
       if (source === targets.receipt && staging(target)
         && path.basename(target) === '.previous-receipt') failOnce('backup-receipt');
       if (staging(source) && target === targets.receipt
@@ -275,7 +280,7 @@ for (const scenario of cases) {
 
     assert.equal(typeof evidence.recoveryDirectory, 'string', 'report the surviving recovery directory');
     assert.ok(path.isAbsolute(evidence.recoveryDirectory));
-    assert.equal(path.dirname(evidence.recoveryDirectory), data.root);
+    assert.equal(path.toNamespacedPath(path.dirname(evidence.recoveryDirectory)), path.toNamespacedPath(data.root));
     assert.deepEqual(staging, [path.basename(evidence.recoveryDirectory)]);
     assert.ok(response.error.includes(evidence.recoveryDirectory), 'human-readable error must identify recovery location');
     assert.ok(Array.isArray(evidence.recoveryFiles));
