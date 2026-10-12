@@ -15,7 +15,8 @@ The runner replaces only `meta.output` on an isolated fixture copy. It uses **th
 From your Bash project root:
 
 ```bash
-SKILL="$(cygpath -u 'D:/ShunCode-Skills/6d32363934/archify')"
+CODEX_ROOT="${CODEX_HOME:-$HOME/.codex}"
+SKILL="$(cygpath -u "$CODEX_ROOT/skills/archify")"
 node "$SKILL/scripts/visual-regression.mjs" \
   --project '.archify/<existing-architecture-folder>/candidate.json' \
   --out-dir '.archify/visual-regression-first' \

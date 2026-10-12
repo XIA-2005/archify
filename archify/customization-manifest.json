@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "LOCAL_CUSTOMIZATION.md",
-      "sha256": "48b7077f8233da4bf3d8a0a26606952bb1cbbd9763277c6b12e4914032d521da"
+      "sha256": "b32aec009598881032cbec9b3bac1be6baa884a0ef3e52baaae336c6dee137aa"
     },
     {
       "path": "SKILL.md",
@@ -310,7 +310,7 @@
     },
     {
       "path": "scripts/VISUAL_REGRESSION.md",
-      "sha256": "23963f2306b8345394ee4f3892796530f3c2bf8f8aec56769a317be15c1a2ea7"
+      "sha256": "576f45facc438d9cc0bc7eec57afc1f944ed3ec9c6ebd3186285ec662c7740ef"
     },
     {
       "path": "scripts/delivery-update-child.mjs",
