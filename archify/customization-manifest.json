@@ -1,6 +1,6 @@
 {
   "upstreamCommit": "54edef453ca3fc495f488c30de97eaea0c789f19",
-  "date": "2026-10-12",
+  "date": "2026-10-13",
   "source": ".",
   "schemaVersion": 1,
   "files": [
@@ -38,7 +38,7 @@
     },
     {
       "path": "editor/editor.html",
-      "sha256": "19b331967594f68cc50a004932e95a3365398ee0bcbe9dde5c9fefb0aca6f56d"
+      "sha256": "cbe7687d5f78bd962ec7633214a5782d799c5b6befab0eb975fb0e2de275cd80"
     },
     {
       "path": "editor/large-graph.mjs",
@@ -50,7 +50,7 @@
     },
     {
       "path": "editor/README.md",
-      "sha256": "04a245e2025ac512b8aa878fd956a3fcc2187c726fd135bfd74ac41c9da27b2c"
+      "sha256": "be2d266d1619df09a7867f42634afe99845a3e0402cb16e57d5836b0046f476d"
     },
     {
       "path": "editor/route-preview-cache.mjs",
@@ -98,7 +98,7 @@
     },
     {
       "path": "editor/test-interaction.mjs",
-      "sha256": "d5e9a08e0cdc7e9a7a323d36ad936af20a3b378ca26807053f28fccdfbfc3f8a"
+      "sha256": "22a3fe616f59f84189994e1b88eb098338343eb982fdfb83fdc07da41df81aab"
     },
     {
       "path": "editor/test-label-color.mjs",
@@ -190,35 +190,35 @@
     },
     {
       "path": "examples/locales/de.json",
-      "sha256": "b233dd1ef302daaa3fb1714865d936e6f4178f4fb1f621f959ab194408bf6087"
+      "sha256": "23da45de9338998832e2a9988753607ec54617249b5770711eada60fbab0ef95"
     },
     {
       "path": "examples/locales/es.json",
-      "sha256": "11b5cd11460d065d2377f5cabf6402d6ad9f7d11d8488578f12a593df164fd64"
+      "sha256": "b625e9880fdcc1918a6effddfede00186bb8169f873245076ed09393df14a5a6"
     },
     {
       "path": "examples/locales/fr.json",
-      "sha256": "95226bf6dc9f4b5f09fc5d9b46460c4e5ef3da0459977f08107830e449dac412"
+      "sha256": "80a19e89d3f33824dd067345e1df6251703b599358fb9d1a06b851900734909e"
     },
     {
       "path": "examples/locales/it.json",
-      "sha256": "6eaf56726a10fd116e54872d451c13999403eca7f41d8b017d56037e2342ee85"
+      "sha256": "e1b19709b4e78aaad85ce33853ea40a9fde287804f7c8253ae9822feaa6a26e3"
     },
     {
       "path": "examples/locales/ja.json",
-      "sha256": "6167c92ed394de10848f0c1f81dbaa3ec462867687755b67d74effdb00bdaab8"
+      "sha256": "70307bda63aced40e49215d3dc4b535def770740a6076aec2fa0b3025e63a094"
     },
     {
       "path": "examples/locales/ko.json",
-      "sha256": "32dec830d4bb76be0c2e6cdf124c35ff8065e90f90b207e063de8a856cfb89c6"
+      "sha256": "44aeb4b5259af47f14f4ff1a50ecb1a6070ed9b1a5ae55bb887b6c9393f2fa72"
     },
     {
       "path": "examples/locales/pt.json",
-      "sha256": "70b706639d63d4c09b9f92ca783d9670dcf80351a5b3aba50707cb67d0c0999b"
+      "sha256": "d2fa3a8be71033397a646c39e196d4853bb34a65f9e567d804bc112d3cdb8868"
     },
     {
       "path": "examples/locales/ru.json",
-      "sha256": "83aaa4becfc9134756a5bdcdc35eb4b62bf07c3d65a92a87fa636b4cca09b087"
+      "sha256": "a74481408b780099021dab77c112224550617fdc135ae7d5f422a84aecfa5438"
     },
     {
       "path": "examples/sequence-cache-miss-request.html",
@@ -234,11 +234,11 @@
     },
     {
       "path": "LOCAL_CUSTOMIZATION.md",
-      "sha256": "48b7077f8233da4bf3d8a0a26606952bb1cbbd9763277c6b12e4914032d521da"
+      "sha256": "b32aec009598881032cbec9b3bac1be6baa884a0ef3e52baaae336c6dee137aa"
     },
     {
       "path": "README.md",
-      "sha256": "7011d99dbba69c51a84e3d9df159381a09e0bdc6c9c60888a477954ab9f8ab02"
+      "sha256": "e1afdb3c256f10bd43bafbd99e137a8074b113ba0d377b6b6348ed6e77098b90"
     },
     {
       "path": "references/authoring-contract.md",
@@ -314,7 +314,7 @@
     },
     {
       "path": "scripts/VISUAL_REGRESSION.md",
-      "sha256": "23963f2306b8345394ee4f3892796530f3c2bf8f8aec56769a317be15c1a2ea7"
+      "sha256": "576f45facc438d9cc0bc7eec57afc1f944ed3ec9c6ebd3186285ec662c7740ef"
     },
     {
       "path": "scripts/visual-regression.mjs",
@@ -322,11 +322,11 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "c27c400797c7d8cfe84b9d65ad258332bbdffbcc3d92c371997db92383838ae0"
+      "sha256": "f4ccbbc76430d0f376089d11c58f2f661c67d4c13bf8010ec5528d11599f0f5b"
     },
     {
       "path": "test/export-browser.test.mjs",
-      "sha256": "2a662e53e06a4764059b99ef9d806af70fd96b8c9ac8e7085ef1e808cd673584"
+      "sha256": "2344623dbd01058ec7859bb119f5526cfacac8047b0a8f57e21c2c132b4181f7"
     },
     {
       "path": "test/export-cleanup-browser.test.mjs",
