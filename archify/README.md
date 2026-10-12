@@ -7,7 +7,7 @@
 
 这一版基于 [tt-a1i/archify](https://github.com/tt-a1i/archify) 的 `54edef453ca3fc495f488c30de97eaea0c789f19`，在原版图表生成、验证和独立 HTML Viewer 上，扩展了**draw.io 原生线条与框架编辑、透明背景导出、可选帧率的 PPT 动图和高分辨率导出**。这是 XIA-2005 的定制分支，保留原作者与 MIT 许可证。
 
-**源码与分支：** Skill 源码位于本目录。项目使用 `dev` 作为集成与试用分支，`main` 为稳定分支；根目录 `archify.zip` 是独立打包产物，版本可能落后于此源码。
+**源码与分支：** Skill 源码位于本目录。项目使用 `dev` 作为集成与试用分支，`main` 为稳定分支；源码仓库不再提交 `archify.zip`。需要时运行 `scripts/build-zip.sh` 生成；发布流程从对应版本源码构建 ZIP 并上传到 GitHub Release。
 
 ## 与原版相比，更新了什么
 

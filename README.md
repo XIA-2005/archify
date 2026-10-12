@@ -5,7 +5,7 @@
 >
 > This branch adds a local visual editor with native draw.io line and frame editing, editable connection labels, batch font controls with hover highlighting, editor light/dark themes, collapsible settings, selectable transparent exports, looping GIF for presentations with selectable 12/24/30/50 fps, and selectable 1×/3×/5×/7×/10× export scales. It keeps the upstream renderer and validation workflow.
 >
-> **[Read the feature comparison and usage guide (中文)](archify/README.md).** The customized Skill source is in `archify/`; `dev` is the integration and trial-use branch, and `main` is stable. The upstream install source and the separately built `archify.zip` may not include the latest source updates. The upstream introduction below is retained for attribution and reference.
+> **[Read the feature comparison and usage guide (中文)](archify/README.md).** The customized Skill source is in `archify/`; `dev` is the integration and trial-use branch, and `main` is stable. The source repository does not track `archify.zip`. Generate it when needed with `scripts/build-zip.sh`; release workflows build and attach it to GitHub Releases. The upstream introduction below is retained for attribution and reference.
 
 ---
 

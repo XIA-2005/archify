@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import { stageSourceSkill } from './helpers/source-index.mjs';
+import { buildSourceArchive } from './helpers/source-archive.mjs';
 
 const require = createRequire(import.meta.url);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -31,7 +32,7 @@ function metadata(content) {
 
 function extractArchive(destination) {
   fs.mkdirSync(destination, { recursive: true });
-  const archive = path.join(repoRoot, 'archify.zip');
+  const archive = buildSourceArchive(repoRoot,fs.mkdtempSync(path.join(os.tmpdir(),'archify-install-archive-')));
   const result = process.platform === 'win32'
     ? spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
       'Expand-Archive -LiteralPath $env:ARCHIFY_TEST_ARCHIVE -DestinationPath $env:ARCHIFY_TEST_EXTRACT'], {
@@ -40,15 +41,16 @@ function extractArchive(destination) {
     })
     : spawnSync('unzip', ['-q', archive, '-d', destination], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.error?.message || result.stderr);
+  fs.rmSync(path.dirname(archive),{recursive:true,force:true});
 }
 
-test('distributed ZIP carries the same valid Skill frontmatter as source', (t) => {
+test('generated ZIP carries the same valid Skill frontmatter as source', (t) => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'archify-frontmatter-'));
   t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
   extractArchive(tmp);
   const source = fs.readFileSync(path.join(repoRoot, 'archify', 'SKILL.md'), 'utf8');
   const packaged = fs.readFileSync(path.join(tmp, 'archify', 'SKILL.md'), 'utf8');
-  assert.equal(packaged, source, 'rebuild archify.zip when Skill instructions change');
+  assert.equal(packaged, source, 'generated ZIP must contain the current Skill instructions');
   assert.deepEqual(metadata(packaged), metadata(source));
   assert.deepEqual(metadata(packaged.replace(/\r?\n/g, '\r\n')), metadata(source));
 });

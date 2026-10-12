@@ -138,12 +138,13 @@ jobs:
         if: needs.scope.outputs.scope == 'full'
         with:
           node-version: 22
-      - name: Rebuild archify.zip and compare exact bytes
+      - name: Build the skill archive twice and compare exact bytes
         if: needs.scope.outputs.scope == 'full'
         run: |
           scripts/build-zip.sh /tmp/fresh.zip
-          if ! cmp -s /tmp/fresh.zip archify.zip; then
-            echo '::error::archify.zip is stale — run scripts/build-zip.sh and commit the result'
+          scripts/build-zip.sh /tmp/repeated.zip
+          if ! cmp -s /tmp/fresh.zip /tmp/repeated.zip; then
+            echo '::error::the skill archive build is not reproducible'
             exit 1
           fi
 
@@ -189,12 +190,6 @@ jobs:
             -H 'Accept: application/octet-stream' > "$published_archive"
           git fetch --force --no-tags --depth=1 origin \
             "refs/tags/v${manifest_version}:refs/tags/v${manifest_version}"
-          tagged_archive="$RUNNER_TEMP/archify-tag-v${manifest_version}.zip"
-          git show "v${manifest_version}:archify.zip" > "$tagged_archive"
-          if ! cmp -s "$published_archive" "$tagged_archive"; then
-            echo "::error::the published archify.zip asset must byte-match archify.zip committed at v${manifest_version}"
-            exit 1
-          fi
           node scripts/check-stable-update-manifest.mjs \
             --archive "$published_archive" \
             --tag "v${manifest_version}" \
@@ -205,11 +200,14 @@ jobs:
             rebuilt_archive="$RUNNER_TEMP/archify-rebuilt-v${manifest_version}.zip"
             git worktree add --detach "$tag_checkout" "v${manifest_version}"
             "$tag_checkout/scripts/build-zip.sh" "$rebuilt_archive"
-            if ! cmp -s "$rebuilt_archive" "$tagged_archive"; then
-              echo "::error::archify.zip committed at v${manifest_version} is not the deterministic build of that tag"
+            if ! cmp -s "$published_archive" "$rebuilt_archive"; then
+              echo "::error::the published archify.zip asset is not the deterministic build of its tag"
               exit 1
             fi
           elif [[ "$manifest_version" == "2.15.0" ]]; then
+            tagged_archive="$RUNNER_TEMP/archify-tag-v${manifest_version}.zip"
+            git show "v${manifest_version}:archify.zip" > "$tagged_archive"
+            cmp -s "$published_archive" "$tagged_archive"
             echo "::notice::v2.15.0 predates the deterministic builder; its published asset is bound to the exact tagged archive blob"
           else
             echo "::error::v${manifest_version} is missing the deterministic archive builder"
@@ -241,6 +239,10 @@ jobs:
         if: needs.scope.outputs.scope == 'full'
         with:
           node-version: 22
+      - name: Build packaged skill from tracked source
+        if: needs.scope.outputs.scope == 'full'
+        shell: bash
+        run: scripts/build-zip.sh "$RUNNER_TEMP/archify-package.zip"
       - name: Extract packaged skill
         if: needs.scope.outputs.scope == 'full' && (runner.os != 'Windows')
         run: |
@@ -248,14 +250,14 @@ jobs:
           package_root="$RUNNER_TEMP/archify-package"
           rm -rf "$package_root"
           mkdir -p "$package_root"
-          unzip -q archify.zip -d "$package_root"
+          unzip -q "$RUNNER_TEMP/archify-package.zip" -d "$package_root"
       - name: Extract packaged skill
         if: needs.scope.outputs.scope == 'full' && (runner.os == 'Windows')
         shell: pwsh
         run: |
           $packageRoot = Join-Path $env:RUNNER_TEMP 'archify-package'
           if (Test-Path $packageRoot) { Remove-Item -Recurse -Force $packageRoot }
-          Expand-Archive -Path archify.zip -DestinationPath $packageRoot
+          Expand-Archive -LiteralPath (Join-Path $env:RUNNER_TEMP 'archify-package.zip') -DestinationPath $packageRoot
       - name: Validate packaged skill without installing dependencies
         if: needs.scope.outputs.scope == 'full'
         run: node scripts/package-smoke.mjs

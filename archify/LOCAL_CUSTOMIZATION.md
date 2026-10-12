@@ -27,4 +27,4 @@ Codex 加载目标环境中的 `<installed-skill>/archify`。检查时，该目�
 
 集成 draw.io Desktop 29.7.9 原生浏览器编辑引擎，用于 Architecture 线条、模块和框架编辑；版本、Apache 2.0 许可证及资源哈希记录在 `editor/vendor/drawio/SOURCE.json`。编辑操作衔接原有 JSON、历史、属性及完整保存校验。框架 `bounds` 与端点 `fromPort/toPort` 是兼容新增字段。
 
-根目录 `archify.zip` 是独立打包产物，可能落后于此源码；本次没有发布新版本、标签或 Release，也没有更新任何 live 安装。当前原生交互和未支持的 JSON 表达范围见 `editor/README.md`。
+源码仓库不再跟踪 `archify.zip`，需要时临时构建或从 GitHub Release 获取；本次没有发布新版本、标签或 Release，也没有更新任何 live 安装。当前原生交互和未支持的 JSON 表达范围见 `editor/README.md`。

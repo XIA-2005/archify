@@ -1,4 +1,5 @@
 .DS_Store
+/archify.zip
 .harnessed/
 node_modules/
 .wrangler/

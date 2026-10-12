@@ -234,11 +234,11 @@
     },
     {
       "path": "LOCAL_CUSTOMIZATION.md",
-      "sha256": "b32aec009598881032cbec9b3bac1be6baa884a0ef3e52baaae336c6dee137aa"
+      "sha256": "be1ab8b1c40b37c00602125de814440bee547fa4a3517f78efdce53523974dcf"
     },
     {
       "path": "README.md",
-      "sha256": "e1afdb3c256f10bd43bafbd99e137a8074b113ba0d377b6b6348ed6e77098b90"
+      "sha256": "b8f1253bc2e242c03dd7fb0defcf34359092373b54f6f5a06301c6a0b8424d00"
     },
     {
       "path": "references/authoring-contract.md",
