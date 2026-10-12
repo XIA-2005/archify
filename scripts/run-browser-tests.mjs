@@ -34,6 +34,7 @@ const testFiles = [
   'crossover-state-browser.test.mjs',
   'semantic-passport-move-browser.test.mjs',
   'export-browser.test.mjs',
+  '../editor/test-label-color.mjs',
   'viewer-identifiers-browser.test.mjs',
   'repository-evidence.test.mjs',
   'repository-evidence-types-browser.test.mjs',

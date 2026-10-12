@@ -2,7 +2,7 @@
 >
 > This branch adds a local visual editor with native draw.io line and frame editing, editable connection labels, batch font controls with hover highlighting, editor light/dark themes, collapsible settings, selectable transparent exports, looping GIF for presentations with selectable 12/24/30/50 fps, and selectable 1×/3×/5×/7×/10× export scales. It keeps the upstream renderer and validation workflow.
 >
-> **[Read the feature comparison and usage guide (中文)](archify/README.md).** This customized Skill is in `archify/` on `feat/export-and-editor-usability`. The default `main`, official install source and existing `archify.zip` do not contain all of these enhancements. The upstream introduction below is retained for attribution and reference.
+> **[Read the feature comparison and usage guide (中文)](archify/README.md).** This customized Skill is in `archify/` on this repository’s `main` branch. This fork’s rebuilt `archify.zip` contains its customized Skill; the upstream official install source remains separate. The upstream introduction below is retained for attribution and reference.
 
 ---
 
