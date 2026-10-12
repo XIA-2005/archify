@@ -1,3 +1,4 @@
+import {componentTextGeometry} from './shared/text-style.mjs';
 // Data bridge only. Pointer, keyboard, handles, guides and context menus run in
 // the unmodified draw.io EditorUi/Graph vendored from the user's desktop build.
 export function createDrawioAdapter(frame, callbacks) {
@@ -7,6 +8,11 @@ export function createDrawioAdapter(frame, callbacks) {
   const copy=value=>structuredClone(value);
   const round=n=>Math.round(n*1000)/1000;
   const style=(entries)=>Object.entries(entries).map(([k,v])=>`${k}=${v}`).join(';')+';';
+  const geometryKey=spec=>JSON.stringify({...spec,
+    components:spec.components.map(({label,sublabel,tag,...node})=>node),
+    boundaries:(spec.boundaries||[]).map(({label,...boundary})=>boundary),
+    connections:spec.connections.map(({label,...edge})=>edge)},
+    (key,value)=>['font_sizes','font_size','labelColor'].includes(key)?undefined:value);
   function absolute(cell) {
     const g=cell.geometry;let x=g.x,y=g.y,p=cell.parent;
     while(p?.geometry){x+=p.geometry.x;y+=p.geometry.y;p=p.parent;}
@@ -24,12 +30,12 @@ export function createDrawioAdapter(frame, callbacks) {
   }
   const cellLabel=c=>String(c.value??'');
   const edgeState=cell=>{
-    const {graph}=api,state=graph.view.getState(cell),g=cell.geometry;
+    const g=cell.geometry;
     return {label:cellLabel(cell),from:cell.source?.archifyId,to:cell.target?.archifyId,
       points:(g.points||[]).map(p=>[p.x,p.y]),style:cell.style,x:g.x,y:g.y,
       offset:g.offset?[g.offset.x,g.offset.y]:null,
-      route:(state?.absolutePoints||[]).filter(Boolean).map(p=>[
-        round(p.x/graph.view.scale-graph.view.translate.x),round(p.y/graph.view.scale-graph.view.translate.y)])};
+      terminals:[cell.source?.geometry?absolute(cell.source):null,cell.target?.geometry?absolute(cell.target):null],
+      parentOrigin:cell.parent?.geometry?absolute(cell.parent).slice(0,2):[0,0]};
   };
   function capture() {
     baseline.clear();
@@ -72,6 +78,7 @@ export function createDrawioAdapter(frame, callbacks) {
       b.wraps=b.wraps.filter(id=>next.components.some(n=>n.id===id));
       return b.wraps.length?[b]:[];
     });
+    if(!Object.hasOwn(imported,'boundaries')&&!next.boundaries.length)delete next.boundaries;
     next.connections=next.connections.filter((e,i)=>model.contains(edges.get(e.id||'edge-'+i)))
       .filter(e=>next.components.some(n=>n.id===e.from)&&next.components.some(n=>n.id===e.to));
     // Newly drawn connections are native draw.io cells. Existing component
@@ -89,6 +96,9 @@ export function createDrawioAdapter(frame, callbacks) {
       const state=graph.view.getState(c);
       if(!state||!c.source?.archifyId||!c.target?.archifyId)continue;
       e.from=c.source.archifyId;e.to=c.target.archifyId;e.label=cellLabel(c);
+      const differs=fields=>!previous||fields.some(key=>JSON.stringify(previous[key])!==JSON.stringify(now[key]));
+      const geometryChanged=differs(['from','to','points','terminals','parentOrigin']);
+      const labelMoved=geometryChanged||differs(['x','y','offset']);
       const points=state.absolutePoints.filter(Boolean).map(p=>({
         x:round(p.x/graph.view.scale-graph.view.translate.x),
         y:round(p.y/graph.view.scale-graph.view.translate.y)}));
@@ -105,13 +115,13 @@ export function createDrawioAdapter(frame, callbacks) {
           }
         }
       }
-      if(points.length>=2){
+      if(geometryChanged&&points.length>=2){
         e.fromPort=port(c.source,points[0]);e.toPort=port(c.target,points.at(-1));
         e.fromSide=side(e.fromPort);e.toSide=side(e.toPort);
         e.via=points.slice(1,-1).map(p=>[round(p.x),round(p.y)]);
         e.route=graph.getCellStyle(c).edgeStyle?'orthogonal-h':'straight';
       }
-      if(state.absoluteOffset&&e.label){
+      if(labelMoved&&state.absoluteOffset&&e.label){
         e.labelAt=[round(state.absoluteOffset.x/graph.view.scale-graph.view.translate.x),
           round(state.absoluteOffset.y/graph.view.scale-graph.view.translate.y)];
         delete e.labelDx;delete e.labelDy;delete e.labelSegment;
@@ -122,10 +132,52 @@ export function createDrawioAdapter(frame, callbacks) {
     ui.editor.setModified(false); // The parent owns persistence and unload warnings.
     callbacks.change(next);
   }
+  function updateNodeText(node,cell) {
+    const {graph}=api,model=graph.model,sizes=componentTextGeometry(node).sizes;
+    model.setValue(cell,node.label);
+    graph.setCellStyles('fontSize',sizes.label,[cell]);
+    const decorated=Boolean(node.sublabel||node.tag);
+    graph.setCellStyles('verticalAlign',decorated?'top':'middle',[cell]);
+    graph.setCellStyles('spacingTop',decorated?'8':'0',[cell]);
+    for(const [key,fraction]of [['sublabel',0.58],['tag',0.84]]){
+      let child=(cell.children||[]).find(c=>c.archifyTextField===key);
+      if(!node[key]){if(child)model.remove(child);continue;}
+      if(!child){
+        child=graph.insertVertex(cell,null,node[key],0,fraction,cell.geometry.width,0,style({
+          shape:'text',fillColor:'none',strokeColor:'none',fontColor:'#526b83',
+          fontSize:sizes[key],whiteSpace:'wrap',html:0,
+          resizable:0,movable:0,selectable:0,editable:0,connectable:0}),true);
+        child.archifyDecoration=true;child.archifyTextField=key;child.setConnectable(false);
+      }else{model.setValue(child,node[key]);graph.setCellStyles('fontSize',sizes[key],[child]);}
+    }
+  }
+  function patchText(spec,key) {
+    const {graph,ui}=api,model=graph.model;
+    suppress=true;model.beginUpdate();
+    try{
+      for(const n of spec.components)updateNodeText(n,nodes.get(n.id));
+      for(const [i,b]of (spec.boundaries||[]).entries()){
+        const c=boundaries.get(i);model.setValue(c,b.label);
+        graph.setCellStyles('fontSize',b.font_sizes?.label??9,[c]);
+      }
+      for(const [i,e]of spec.connections.entries()){
+        const c=edges.get(e.id||'edge-'+i);
+        model.setValue(c,e.label||'');
+        graph.setCellStyles('fontSize',e.font_sizes?.label??8,[c]);
+        graph.setCellStyles('fontColor',e.labelColor||'#526b83',[c]);
+      }
+    }finally{model.endUpdate();suppress=false;}
+    imported=copy(spec);signature=key;capture();ui.editor.setModified(false);
+  }
   function load(spec,routes,scene) {
     if(!api||!spec)return;
     const key=JSON.stringify(spec);
     if(key===signature && (seeded||!routes))return;
+    // A text, type-size or color edit must not discard native routes or automatic
+    // label anchors. Patch the existing cells, including when undoing that edit.
+    if(imported&&seeded&&geometryKey(imported)===geometryKey(spec)){
+      patchText(spec,key);return;
+    }
     if(routes)seeded=true;
     const {graph,ui}=api,w=frame.contentWindow,model=graph.model;
     const remembered=graph.getSelectionCells().map(c=>[c.archifyKind,c.archifyId]);
@@ -147,7 +199,7 @@ export function createDrawioAdapter(frame, callbacks) {
         const cell=graph.insertVertex(parent,'boundary-'+i,b.label,...box,style({
           rounded:1,arcSize:10,fillColor:'none',strokeColor:'#647c98',dashed:1,
           container:1,collapsible:0,recursiveResize:0,connectable:0,
-          align:'left',verticalAlign:'top',spacing:12,fontSize:b.font_sizes?.label||12,
+          align:'left',verticalAlign:'top',spacing:12,fontSize:b.font_sizes?.label??9,
           fontColor:'#526b83',whiteSpace:'wrap',html:0}));
         cell.archifyKind='boundary';cell.archifyId=i;cell.setConnectable(false);boundaries.set(i,cell);
         if(b.labelOffset){const geometry=cell.geometry.clone();geometry.offset=new w.mxPoint(...b.labelOffset);model.setGeometry(cell,geometry);}
@@ -160,28 +212,19 @@ export function createDrawioAdapter(frame, callbacks) {
           .filter(([i,c])=>{const g=c.geometry;return box[0]>=g.x&&box[1]>=g.y&&box[0]+box[2]<=g.x+g.width&&box[1]+box[3]<=g.y+g.height;})
           .sort((a,b)=>a[1].geometry.width*a[1].geometry.height-b[1].geometry.width*b[1].geometry.height)[0]?.[1];
         if(owner){box[0]-=owner.geometry.x;box[1]-=owner.geometry.y;}
+        const sizes=componentTextGeometry(n).sizes;
         const c=graph.insertVertex(owner||parent,'node-'+n.id,n.label,...box,style({
           rounded:1,arcSize:12,whiteSpace:'wrap',html:0,fillColor:'#eaf3fd',strokeColor:'#739cc3',
-          fontColor:'#172f48',fontSize:n.font_sizes?.label||14,rotation:0}));
+          fontColor:'#172f48',fontSize:sizes.label,rotation:0}));
         c.archifyKind='node';c.archifyId=n.id;nodes.set(n.id,c);
-        if(n.sublabel||n.tag){
-          graph.setCellStyles('verticalAlign','top',[c]);graph.setCellStyles('spacingTop','8',[c]);
-          for(const [key,fraction,size]of [['sublabel',0.58,10],['tag',0.84,9]]){
-            if(!n[key])continue;
-            const child=graph.insertVertex(c,null,n[key],0,fraction,box[2],0,style({
-              shape:'text',fillColor:'none',strokeColor:'none',fontColor:'#526b83',
-              fontSize:n.font_sizes?.[key]||size,whiteSpace:'wrap',html:0,
-              resizable:0,movable:0,selectable:0,editable:0,connectable:0}),true);
-            child.archifyDecoration=true;child.setConnectable(false);
-          }
-        }
+        updateNodeText(n,c);
       }
       for(const [i,e]of spec.connections.entries()){
         const r=routes?.get(i),id=e.id||'edge-'+i;
         const entries={edgeStyle:e.route==='straight'?'none':'orthogonalEdgeStyle',rounded:1,
           html:0,endArrow:'block',endFill:1,strokeColor:e.variant==='emphasis'?'#087e61':'#2679bd',
           strokeWidth:(e.width||1.5)*(spec.meta.line_scale||1),fontColor:e.labelColor||'#526b83',
-          fontSize:e.font_sizes?.label||12,labelBackgroundColor:'none'};
+          fontSize:e.font_sizes?.label??8,labelBackgroundColor:'none'};
         const points=r?.points;
         for(const [field,node,p]of [['exit',nodes.get(e.from),e.fromPort],['entry',nodes.get(e.to),e.toPort]]){
           if(!node)continue;
@@ -244,7 +287,7 @@ export function createDrawioAdapter(frame, callbacks) {
         const c=edges.get(e.id||'edge-'+i);if(!c)continue;const s=g.getCellStyle(c);
         if(s.curved==1)issues.push('曲线');
         if(s.endArrow!=='block'||s.startArrow&&s.startArrow!=='none')issues.push('自定义箭头');
-        if(Number(s.fontSize)!==(e.font_sizes?.label||12)||s.fontColor!==(e.labelColor||'#526b83'))issues.push('原生文字样式（请使用 Archify 属性面板）');
+        if(Number(s.fontSize)!==(e.font_sizes?.label??8)||s.fontColor!==(e.labelColor||'#526b83'))issues.push('原生文字样式（请使用 Archify 属性面板）');
         if(s.strokeColor!==(e.variant==='emphasis'?'#087e61':'#2679bd'))issues.push('原生线条颜色');
       }
       for(const [id,c]of nodes){const s=g.getCellStyle(c);if(Number(s.rotation||0)!==0)issues.push('旋转模块');}

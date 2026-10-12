@@ -48,6 +48,6 @@
 
 ## 验证与版本状态
 
-上传前已通过 Viewer 模板生成一致性、golden 检查、26 项真实浏览器导出检查、33 项国际化检查、8 项 draft/分组标题检查，以及编辑器主题与八类悬停高亮的浏览器验证。编辑器浅色/深色与悬停效果已人工查看。
+上传前已通过 Viewer 模板生成一致性、golden 检查、26 项真实浏览器导出检查、33 项国际化检查、8 项 draft/分组标题检查，以及编辑器主题与八类悬停高亮的浏览器验证。draw.io 原生线条/框架编辑与字号编辑另有真实浏览器回归（`test/drawio-editor-browser.test.mjs`、`test/drawio-font-editing-browser.test.mjs`），覆盖模块移动与复制、撤销/重做、线段拖动、框架缩放、端点重连，以及字号默认值、0.5 步进和内联编辑保持视口等场景。编辑器浅色/深色与悬停效果已人工查看。
 
-这些是本版相关功能的验证结果，不代表完整仓库测试或远程 CI 全部通过。当前 main 提供源码与更新后的模板/示例；本仓库 ZIP 已使用规范的 Node 22 工具链重建；它是本仓库定制包，不是上游官方 Release。详细记录见 [LOCAL_CUSTOMIZATION.md](LOCAL_CUSTOMIZATION.md)。
+这些是本版相关功能的验证结果，不代表完整仓库测试或远程 CI 全部通过。当前 main 提供源码与更新后的模板/示例；本仓库 ZIP 已使用规范的 Node 22 工具链重建，并逐文件核对与源码的一致性；它是本仓库定制包，不是上游官方 Release。详细记录见 [LOCAL_CUSTOMIZATION.md](LOCAL_CUSTOMIZATION.md)。

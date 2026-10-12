@@ -69,6 +69,10 @@ function executable(file) {
 }
 
 function commandPath(command) {
+  if (process.platform === 'win32') {
+    const result = spawnSync('where.exe', [command], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return result.status === 0 ? result.stdout.trim().split(/\r?\n/)[0] : null;
+  }
   const result = spawnSync('sh', ['-c', 'command -v "$1"', 'archify-showcase', command], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
@@ -298,8 +302,15 @@ async function captureFrames(chromePath, tempRoot) {
     if (chromeErrors.trim()) error.message += `\nChrome diagnostics:\n${chromeErrors.trim()}`;
     throw error;
   } finally {
+    // Let Chrome release its profile before removing the capture directory.
+    const exited = new Promise(resolve => {
+      if (chrome.exitCode !== null || chrome.signalCode !== null) return resolve();
+      const timer = setTimeout(() => { chrome.kill('SIGTERM'); resolve(); }, 3000);
+      chrome.once('exit', () => { clearTimeout(timer); resolve(); });
+    });
+    await cdp.send('Browser.close', {}, undefined, 2000).catch(() => chrome.kill('SIGTERM'));
+    await exited;
     cdp.failAll(new Error('capture finished'));
-    chrome.kill('SIGTERM');
   }
 }
 
@@ -356,7 +367,7 @@ async function main() {
     console.log(outputPath);
     console.log(receiptPath);
   } finally {
-    fs.rmSync(tempRoot, { recursive: true, force: true });
+    fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 }
 

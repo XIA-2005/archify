@@ -981,37 +981,53 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       if(type==='number'&&!Number.isFinite(val))return;
       const before=clone(spec);
       try{onChange(val);if(selected?.kind==='edge')selectedHandle=null;
-        checkpoint(before);normalizeScene();draw();renderInspector();}
+        checkpoint(before);if(type!=='text')normalizeScene();draw();renderInspector();}
       catch(error){spec=before;status('输入无效：'+error.message,'error');renderInspector();}
     });
     return input;
   }
   const legendLabels={frontend:'前端',backend:'后端',database:'数据库',cloud:'云服务',security:'安全',messagebus:'消息总线',external:'外部系统'};
-  function fontControl(name,value,fallback,onChange) {
+  function fontControl(name,value,fallback,onChange,category=null) {
     const label=dom('label','field font-control',name+' (px)',panel);
     const input=dom('input','',null,label);
     input.type='number';input.min='6';input.max='72';input.step='0.5';
-    input.value=value??'';input.placeholder=String(fallback);
+    input.value=String(value??fallback);input.placeholder=String(fallback);
     input.dataset.fontControl=name;
     const change=v=>{
-      if(v!=null&&(!Number.isFinite(v)||v<6||v>72||!Number.isInteger(v*2))){status('字号应为 6–72px，步长 0.5。','error');input.value=value??'';return;}
-      const before=clone(spec);onChange(v);checkpoint(before);normalizeScene();draw();renderInspector();
+      if(v!=null&&(!Number.isFinite(v)||v<6||v>72||!Number.isInteger(v*2))){status('字号应为 6–72px，步长 0.5。','error');input.value=String(value??fallback);return;}
+      const before=clone(spec);onChange(v);checkpoint(before);draw();renderInspector();
     };
     input.onchange=()=>change(input.value===''?null:input.valueAsNumber);
-    const reset=dom('button','', '恢复默认',label);reset.type='button';reset.onclick=()=>change(null);
+    const apply=dom('button','', '一键设置',label);apply.type='button';
+    apply.dataset.applyFontCategory=category||'single';
+    apply.title=category?'将此字号应用到所有'+fontCategories.find(([key])=>key===category)[1]:'设置此字号';
+    apply.onpointerdown=event=>event.preventDefault();
+    apply.onclick=()=>{
+      const size=input.value===''?fallback:input.valueAsNumber,before=clone(spec);
+      try {
+        if(!Number.isFinite(size)||size<6||size>72||!Number.isInteger(size*2))throw Error('字号应为 6–72px，步长 0.5。');
+        const count=category?setCategoryFont(spec,category,size):(onChange(size),1);
+        if(JSON.stringify(before)!==JSON.stringify(spec)){checkpoint(before);draw();renderInspector();}
+        status('已设置 '+count+' 段'+(category?fontCategories.find(([key])=>key===category)[1]:'文字')+'字号为 '+size+'px。');
+      }catch(error){status(error.message,'error');}
+    };
   }
   function fontProperty(name,owner,key,fallback) {
+    const category=spec.components.includes(owner)?'node-'+key
+      :spec.connections.includes(owner)?'edge-label'
+      :(spec.boundaries||[]).includes(owner)?'boundary-label'
+      :(spec.cards||[]).includes(owner)?'card-title':null;
     fontControl(name,owner.font_sizes?.[key],fallback,v=>{
       if(v==null){delete owner.font_sizes?.[key];if(owner.font_sizes&&!Object.keys(owner.font_sizes).length)delete owner.font_sizes;}
       else {owner.font_sizes ||= {};owner.font_sizes[key]=v;}
-    });
+    },category);
   }
   function itemFontProperty(card,index) {
     fontControl('正文 '+(index+1)+' 字号',card.font_sizes?.items?.[index],13,v=>{
       card.font_sizes ||= {};card.font_sizes.items ||= card.items.map(()=>null);
       card.font_sizes.items[index]=v;
       if(card.font_sizes.items.every(v=>v==null))delete card.font_sizes.items;
-    });
+    },'card-items');
   }
   function applyFontPreview() {
     drawio?.previewFonts(fontPreviewCategory);
@@ -1146,11 +1162,11 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       const n=findNode(selected.id);
       if(n){
         dom('h3','', '模块：'+n.id,panel);
-        property('模块名称',n.label,v=>n.label=v);
+        property('模块名称',n.label,v=>n.label=v,'text');
         fontProperty('模块名称字号',n,'label',componentTextGeometry(n).sizes.label);
-        property('模块说明',n.sublabel||'',v=>n.sublabel=v);
+        property('模块说明',n.sublabel||'',v=>n.sublabel=v,'text');
         fontProperty('模块说明字号',n,'sublabel',componentTextGeometry(n).sizes.sublabel);
-        property('模块标签',n.tag||'',v=>n.tag=v);
+        property('模块标签',n.tag||'',v=>n.tag=v,'text');
         fontProperty('模块标签字号',n,'tag',componentTextGeometry(n).sizes.tag);
         property('模块类型',n.type,v=>n.type=v,'select');
         property('位置 X',boxOf(n).x,v=>n.pos[0]=v,'number');
@@ -1163,7 +1179,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       const e=findEdge(selected.id);
       if(e){
         dom('h3','', '连接：'+(e.id||selected.id),panel);
-        property('连线文字',e.label||'',v=>e.label=v).dataset.edgeLabelInput='true';
+        property('连线文字',e.label||'',v=>e.label=v,'text').dataset.edgeLabelInput='true';
         fontProperty('连线文字字号',e,'label',8);
         const colorField=property('连线文字颜色',e.labelColor||'',v=>{
           const color=v.trim();
@@ -1280,7 +1296,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
         const autoFrame=dom('button','', '恢复按成员自动计算框架',panel);
         autoFrame.onclick=()=>{if(!b.bounds)return;checkpoint();delete b.bounds;draw();renderInspector();};
         dom('h3','', '分组标题位置（可直接拖动文字）',panel);
-        property('分组标题',b.label,v=>b.label=v);fontProperty('分组标题字号',b,'label',9);
+        property('分组标题',b.label,v=>b.label=v,'text');fontProperty('分组标题字号',b,'label',9);
         const setOffset=(axis,v)=>{const offset=[...(b.labelOffset||[0,0])];offset[axis]=v;b.labelOffset=offset;};
         property('标题水平偏移 (px)',b.labelOffset?.[0]??0,v=>setOffset(0,v),'number');
         property('标题垂直偏移 (px)',b.labelOffset?.[1]??0,v=>setOffset(1,v),'number');
@@ -1299,7 +1315,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
         spec.meta.legend.entries[selected.id] ||= {};
         if(v==null)delete spec.meta.legend.entries[selected.id].font_size;
         else spec.meta.legend.entries[selected.id].font_size=v;
-      });
+      },'legend');
     }
     dom('h3','', '分组与图例',panel);
     (spec.boundaries||[]).forEach((b,i)=>{const btn=dom('button','',b.label,panel);btn.onclick=()=>select('boundary',i);});
