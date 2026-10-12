@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> **使用高水平模型生成质量更佳（模型推荐：GPT-6.1 SOL 中）**
+>
+> 每次图表生成完成后的交付回复都会附上此提醒。“中”表示中等推理强度。
+
 # Archify 定制增强版
 
 这一版基于 [tt-a1i/archify](https://github.com/tt-a1i/archify) 的 `54edef453ca3fc495f488c30de97eaea0c789f19`，在原版图表生成、验证和独立 HTML Viewer 上，扩展了**draw.io 原生线条与框架编辑、透明背景导出、可选帧率的 PPT 动图和高分辨率导出**。这是 XIA-2005 的定制分支，保留原作者与 MIT 许可证。

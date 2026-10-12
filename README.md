@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **使用高水平模型生成质量更佳（模型推荐：GPT-6.1 SOL 中）**
+
 > **Customized Archify fork — export and visual editor enhancements**
 >
 > This branch adds a local visual editor with native draw.io line and frame editing, editable connection labels, batch font controls with hover highlighting, editor light/dark themes, collapsible settings, selectable transparent exports, looping GIF for presentations with selectable 12/24/30/50 fps, and selectable 1×/3×/5×/7×/10× export scales. It keeps the upstream renderer and validation workflow.

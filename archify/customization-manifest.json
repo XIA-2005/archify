@@ -237,6 +237,10 @@
       "sha256": "48b7077f8233da4bf3d8a0a26606952bb1cbbd9763277c6b12e4914032d521da"
     },
     {
+      "path": "README.md",
+      "sha256": "7011d99dbba69c51a84e3d9df159381a09e0bdc6c9c60888a477954ab9f8ab02"
+    },
+    {
       "path": "references/authoring-contract.md",
       "sha256": "629e661516da43375df168892f2356c90b34e64369cad37bb98643f981493bbc"
     },
@@ -318,7 +322,7 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "9eea9fb4c02d04b5053a0cb6a5668ac44ceff98aa6a360a93f4e1821960d98df"
+      "sha256": "c27c400797c7d8cfe84b9d65ad258332bbdffbcc3d92c371997db92383838ae0"
     },
     {
       "path": "test/export-browser.test.mjs",
