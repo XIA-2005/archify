@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="generator" content="archify 2.17.0-dev.1">
+  <meta name="generator" content="archify 3.0.1">
   <meta name="archify-reader-contract" content="declared-wide-v1">
   <title>Archify Pipeline Diagram</title>
   <script>
@@ -607,6 +607,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       width: 100%;
       max-width: var(--archify-reader-width, 1440px);
       margin: 0 auto;
+    }
+    html[data-reader-narrow="true"]:not([data-present="true"]) .diagram-container > svg {
+      min-width: 0;
+      max-width: var(--archify-diagram-max-width);
+      margin-inline: auto;
     }
     @media (min-width: 768px) and (max-height: 920px) {
       .header { margin-bottom: 1rem; }
@@ -3657,6 +3662,18 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     .toolbar .export-menu button[data-action="route-share-card"]::before,
     .toolbar .export-menu button[data-action="reach-share-card"]::before { color: var(--frontend-stroke); opacity: 1; }
     .toolbar .export-menu button[hidden] { display: none; }
+    .toolbar .export-menu button[data-action="transparent-background"] { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) 1rem; }
+    .toolbar .export-menu button[data-action="transparent-background"]::before { display: none; }
+    .toolbar .export-resolution { align-items: center; }
+    .toolbar .export-resolution label { font-size: 12px; font-weight: 600; color: var(--text); }
+    .toolbar .export-resolution select { min-width: 0; width: 100%; padding: 7px; border-radius: 7px; border: 1px solid var(--panel-border); background: var(--bg); color: var(--text); font: inherit; font-size: 12px; }
+    .toolbar .export-resolution select:focus-visible { outline: 2px solid var(--frontend-stroke); outline-offset: 2px; }
+    .toolbar .export-resolution > .hint { grid-column: 1 / -1; }
+    [data-action="transparent-background"] .export-item-copy { flex-direction: column; align-items: flex-start; gap: 0.15rem; white-space: normal; }
+    [data-action="transparent-background"] .export-item-copy strong { overflow: visible; }
+    [data-action="transparent-background"] .export-item-copy small { line-height: 1.5; }
+    .export-background-check { margin-left: auto; width: 16px; height: 16px; border: 1px solid var(--text-muted); border-radius: 4px; flex-shrink: 0; }
+    [data-action="transparent-background"][aria-checked="true"] .export-background-check { background: var(--frontend-stroke); border-color: var(--frontend-stroke); box-shadow: inset 0 0 0 3px var(--panel); }
     .toolbar .export-menu button[data-action="route-share-card"]:hover,
     .toolbar .export-menu button[data-action="reach-share-card"]:hover {
       background: color-mix(in srgb, var(--frontend-stroke) 12%, transparent);
@@ -3991,6 +4008,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
        ========================================================== */
     .c-grid       { stroke: var(--grid); fill: none; }
     .c-mask       { fill: var(--mask); stroke: none; }
+    /* Label backing rectangles sit immediately before their text in every
+       renderer. Keep their geometry for layout checks, but do not paint over
+       routes, nodes or nested frames when labels grow. Node and activation
+       backings precede their visible shapes and remain opaque. */
+    .c-mask:has(+ text) { fill: none; pointer-events: none; }
     .c-lane-rule  { stroke: var(--lane-stroke); fill: none; opacity: 0.7; }
     .c-lane-wash  { fill: var(--lane-fill); stroke: none; }
 
@@ -4173,8 +4195,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
        them before producing the canonical SVG or any derived visual. */
     .source-evidence-beacon {
       pointer-events: none;
-      opacity: 0.76;
-      transition: opacity 160ms ease, filter 160ms ease;
+      opacity: 1;
+      transition: filter 160ms ease;
     }
     .source-evidence-beacon rect {
       fill: color-mix(in srgb, var(--mask) 92%, var(--backend-stroke));
@@ -4184,8 +4206,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     }
     .source-evidence-beacon text {
       fill: var(--backend-stroke);
-      font-size: 5.5px;
-      font-weight: 800;
+      font-size: 7px;
+      font-weight: 700;
       letter-spacing: 0.06em;
       text-anchor: middle;
       text-transform: uppercase;
@@ -4948,6 +4970,25 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <button data-action="reach-share-card" type="button" role="menuitem" tabindex="-1" hidden disabled><span class="export-item-copy"><strong>Reach Share Card</strong><small class="hint">1200&times;630 PNG</small></span></button>
           <button data-action="copy" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>Copy diagram</strong><small class="hint">PNG to clipboard</small></span></button>
         </div>
+        <div class="export-menu-section" role="group" aria-label="Background">
+          <span class="export-menu-heading" aria-hidden="true">Background</span>
+          <button data-action="transparent-background" type="button" role="menuitemcheckbox" aria-checked="false" tabindex="-1"><span class="export-item-copy"><strong>Transparent background</strong><small class="hint">PNG / WebP / WebM / GIF / SVG · JPEG stays opaque</small></span><span class="export-background-check" aria-hidden="true"></span></button>
+        </div>
+        <div class="export-menu-section export-resolution" role="group" aria-label="Export scale">
+          <label for="export-scale">Export scale</label>
+          <select id="export-scale" aria-describedby="export-scale-hint">
+            <option value="auto">Default</option>
+            <option value="1">1×</option><option value="3">3×</option><option value="5">5×</option><option value="7">7×</option><option value="10">10×</option>
+          </select>
+          <small id="export-scale-hint" class="hint">PNG / JPEG / WebP / GIF / WebM · Default: images 4×, motion up to 1280px. SVG stays vector.</small>
+        </div>
+        <div class="export-menu-section export-resolution" role="group" aria-label="GIF frame rate">
+          <label for="export-gif-fps">GIF frame rate</label>
+          <select id="export-gif-fps" aria-describedby="export-gif-fps-hint">
+            <option value="12">12 FPS</option><option value="24">24 FPS</option><option value="30">30 FPS</option><option value="50">50 FPS</option>
+          </select>
+          <small id="export-gif-fps-hint" class="hint">Higher frame rates give smoother motion and larger files. GIF timing uses 10 ms steps.</small>
+        </div>
         <div class="export-menu-section" role="group" aria-label="Raster images">
           <span class="export-menu-heading" aria-hidden="true">Image</span>
           <button data-format="png" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>PNG</strong><small class="hint">Lossless image</small></span></button>
@@ -4960,6 +5001,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <button data-format="svg-light" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>SVG · Light</strong><small class="hint">Always light</small></span></button>
           <button data-format="svg-dark" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>SVG · Dark</strong><small class="hint">Always dark</small></span></button>
           <button data-format="webm" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>WebM</strong><small class="hint">6s motion</small></span></button>
+          <button data-format="gif" type="button" role="menuitem" tabindex="-1"><span class="export-item-copy"><strong>GIF</strong><small class="hint">6s loop · PowerPoint</small></span></button>
         </div>
       </div>
     </div>
@@ -4979,7 +5021,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     </div>
 
 
-    <script id="archify-i18n-data" type="application/json">{"locale":"en","messages":{"viewer.kind.frontend":"Frontend","viewer.kind.backend":"Backend","viewer.kind.database":"Database","viewer.kind.cloud":"Cloud","viewer.kind.security":"Security","viewer.kind.messagebus":"Message bus","viewer.kind.external":"External","viewer.kind.neutral":"Neutral","viewer.kind.node":"Node","viewer.kind.start":"Start","viewer.kind.active":"Active","viewer.kind.waiting":"Waiting","viewer.kind.decision":"Decision","viewer.kind.success":"Success","viewer.kind.failure":"Failure","viewer.toolbar.actions":"Diagram actions","viewer.theme.toggle.title":"Toggle theme (T)","viewer.theme.toggle":"Toggle color theme","viewer.theme.dark":"Dark","viewer.theme.light":"Light","viewer.preset.choose.title":"Choose visual style (S cycles)","viewer.preset.choose":"Choose visual style","viewer.preset.style":"Style","viewer.preset.menu":"Visual style","viewer.preset.identity":"Visual identity","viewer.preset.cycles":"to cycle","viewer.preset.classic":"Classic","viewer.preset.classic.short":"Classic","viewer.preset.classic.hint":"Stable technical default","viewer.preset.flow":"Signal Flow","viewer.preset.flow.short":"Flow","viewer.preset.flow.hint":"Motion-forward presentation","viewer.preset.blueprint":"Blueprint","viewer.preset.blueprint.hint":"Engineering review","viewer.preset.editorial":"Editorial","viewer.preset.editorial.hint":"Publication and launch notes","viewer.preset.badge.signalFlow":"SIGNAL FLOW","viewer.preset.badge.blueprint":"BLUEPRINT / REV 01","viewer.preset.badge.editorial":"EDITORIAL / FIELD NOTE","viewer.preset.badge.editorialPlate":"ARCHIFY / PLATE 04","viewer.preset.current":"Visual style: {style}. Choose visual style","viewer.motion.live":"Live","viewer.motion.still":"Still","viewer.motion.pause":"Pause motion","viewer.motion.resume":"Resume motion","viewer.motion.reduced":"Motion paused by reduced-motion preference","viewer.motion.hidden":"Motion paused while this page is hidden","viewer.motion.yielding":"Pause motion; currently yielding to {owner}","viewer.motion.yielding.title":"Live preview enabled · yielding to {owner}","viewer.owner.route":"Route Probe","viewer.owner.lens":"Semantic Lens","viewer.owner.relationship":"Relationship Preview","viewer.owner.intent":"Intent Trace","viewer.owner.focus":"semantic focus","viewer.owner.legend":"legend preview","viewer.owner.reader":"reader interaction","viewer.present.enter":"Enter presentation stage","viewer.present.enter.title":"Presentation stage (F)","viewer.present.exit":"Exit presentation stage","viewer.present.exit.title":"Exit presentation stage (F or Escape)","viewer.present.present":"Present","viewer.present.exit.label":"Exit","viewer.export.button":"Export","viewer.export.button.title":"Export diagram (E)","viewer.export.diagram":"Export diagram","viewer.export.menu":"Export","viewer.export.subtitle":"Portable, clean outputs","viewer.export.share":"Share","viewer.export.shareCard":"Share Card","viewer.export.routeShareCard":"Route Share Card","viewer.export.reachShareCard":"Reach Share Card","viewer.export.copyDiagram":"Copy diagram","viewer.export.clipboardPng":"PNG to clipboard","viewer.export.raster":"Raster images","viewer.export.image":"Image","viewer.export.lossless":"Lossless image","viewer.export.compact":"Compact image","viewer.export.modern":"Modern image","viewer.export.vectorMotion":"Vector and motion","viewer.export.vectorMotion.heading":"Vector \u0026 motion","viewer.export.editable":"Editable vector","viewer.export.svg.auto":"SVG · Auto","viewer.export.svg.auto.hint":"Matches host theme","viewer.export.svg.light":"SVG · Light","viewer.export.svg.light.hint":"Always light","viewer.export.svg.dark":"SVG · Dark","viewer.export.svg.dark.hint":"Always dark","viewer.export.motion6s":"6s motion","viewer.export.unsupported":"Not supported by this browser","viewer.export.clipboardUnsupported":"Clipboard image write not supported by this browser","viewer.export.clipboardUnsupported.short":"Clipboard image write not supported in this browser.","viewer.export.motionUnavailable":"Motion capture unavailable in this browser","viewer.export.webmUnavailable":"WebM unavailable in this browser","viewer.export.failed":"Export failed: {message}","viewer.export.unknownVariant":"Unknown Share Card variant: {variant}","viewer.export.routeRequired":"Trace a route before exporting a Route Share Card","viewer.export.reachRequired":"Trace authored reach before exporting a Reach Share Card","viewer.export.unknown":"unknown","viewer.export.routeFailed":"Route Share Card export failed: {message}","viewer.export.reachFailed":"Reach Share Card export failed: {message}","viewer.export.copyFailed":"Copy failed: {message}","viewer.export.copiedPng":"Copied PNG to clipboard","viewer.export.downloadedRoute":"Downloaded Route Share Card","viewer.export.downloadedReach":"Downloaded Reach Share Card","viewer.export.downloadedWebm":"Downloaded WebM","viewer.export.recording":"Recording 6 seconds of motion…","viewer.export.card.routeSummary.one":"Path: {source} → {target} · {count} step","viewer.export.card.routeSummary.other":"Path: {source} → {target} · {count} steps","viewer.export.card.reachSummary":"Authored {direction} from {origin} · {nodes} · {links} · max {hops}","viewer.export.card.node.one":"{count} node","viewer.export.card.node.other":"{count} nodes","viewer.export.card.link.one":"{count} link","viewer.export.card.link.other":"{count} links","viewer.export.card.hop.one":"{count} hop","viewer.export.card.hop.other":"{count} hops","viewer.export.card.routeBadge":"ARCHIFY · ROUTE · {hops}","viewer.export.card.reachBadge":"ARCHIFY · {direction} REACH","viewer.export.direction.upstream":"Upstream","viewer.export.direction.downstream":"Downstream","viewer.export.error.canvasUnavailable":"Canvas unavailable for {label}","viewer.export.error.contextUnavailable":"2D canvas context unavailable for {label}","viewer.export.error.toBlobUnavailable":"canvas.toBlob unavailable for {label}","viewer.export.error.toBlobNull":"canvas.toBlob returned no data for {label}","viewer.export.error.variantsCombined":"Share Card variants cannot be combined","viewer.export.error.viewerState":"Share Card export could not remove temporary viewer state","viewer.export.error.routeState":"Route Card export could not preserve the resolved route safely","viewer.export.error.reachState":"Reach Card export could not preserve authored reach safely","viewer.export.error.webmRequirements":"WebM motion export requires a trace animation and browser MediaRecorder support","viewer.export.error.mediaRecorder":"MediaRecorder failed","viewer.export.error.emptyWebm":"MediaRecorder produced an empty WebM","viewer.export.error.webmBackground":"SVG background could not be loaded for WebM export","viewer.guide.title":"Explore this system","viewer.focus.selectedNodes":"{count} selected nodes","viewer.guide.eyebrow":"Diagram guide","viewer.guide.close":"Close diagram guide","viewer.guide.inspecting":"Inspecting compiled semantics","viewer.guide.actions":"Diagram exploration actions","viewer.guide.find":"Find any node","viewer.guide.find.hint":"Search labels, responsibilities, kinds, and stable IDs.","viewer.guide.route":"Trace a route","viewer.guide.route.aria":"Trace a directed route","viewer.guide.route.hint":"Ask how two semantic nodes connect in authored direction.","viewer.guide.map":"See the whole system","viewer.guide.map.hint":"Open Semantic Radar with a live viewport and stable nodes.","viewer.guide.lens":"Compare semantic kinds","viewer.guide.lens.hint":"Count roles, reveal their traffic, and compare direct authored links.","viewer.guide.present":"Enter Presentation Stage","viewer.guide.present.hint":"Give the live diagram the viewport without changing export.","viewer.guide.shortcuts":"Additional keyboard shortcuts","viewer.guide.shortcut.export":"Export","viewer.guide.shortcut.theme":"Theme","viewer.guide.shortcut.style":"Style","viewer.guide.shortcut.reset":"Reset","viewer.guide.shortcut.zoomIn":"Zoom in","viewer.guide.shortcut.zoomOut":"Zoom out","viewer.guide.shortcut.close":"Close","viewer.guide.facts":"{nodes} · {relationships}","viewer.guide.fact.node.one":"{count} semantic node","viewer.guide.fact.node.other":"{count} semantic nodes","viewer.guide.fact.relationship.one":"{count} relationship","viewer.guide.fact.relationship.other":"{count} relationships","viewer.guide.open":"Open diagram guide","viewer.finder.title":"Find a node","viewer.finder.close":"Close node finder","viewer.finder.placeholder":"Search labels or IDs","viewer.finder.search":"Search diagram nodes","viewer.finder.results":"Diagram nodes","viewer.finder.empty":"No matching nodes","viewer.finder.result.focus":"Focus {label}","viewer.finder.result.routeStart":"Choose {label} as route start","viewer.finder.result.routeTarget":"Choose {label} as route destination, {links}","viewer.finder.status.empty":"No matching nodes","viewer.finder.status.count.one":"{count} matching node","viewer.finder.status.count.other":"{count} matching nodes","viewer.finder.noun.nodes":"nodes","viewer.finder.link.one":"{count} link","viewer.finder.link.other":"{count} links","viewer.finder.result.focus.one":"Focus {label}, {count} related connection","viewer.finder.result.focus.other":"Focus {label}, {count} related connections","viewer.finder.status.filtered":"{visible} of {available} {noun}","viewer.finder.status.all":"{available} {noun}","viewer.passport.eyebrow":"Semantic passport","viewer.passport.metadata":"Node metadata","viewer.passport.evidence":"Verified source evidence","viewer.passport.verified":"Verified source","viewer.passport.verificationScope":"Verified against local Git at the pinned revision. Remote access has not been checked.","viewer.passport.reach":"Authored reach","viewer.passport.reach.trace":"Trace authored reachability","viewer.passport.upstream":"Upstream","viewer.passport.downstream":"Downstream","viewer.passport.upstream.trace":"Trace upstream authored reachability","viewer.passport.downstream.trace":"Trace downstream authored reachability","viewer.passport.close":"Close semantic passport","viewer.passport.move":"Move semantic passport. Drag, use arrow keys, or press Home to reset.","viewer.passport.copy":"Copy link","viewer.passport.copy.focus":"Copy link to focused node","viewer.passport.relations":"Relations","viewer.passport.relations.show":"Show connected relationships","viewer.passport.relations.hide":"Hide connected relationships","viewer.passport.relations.list":"Connected relationships","viewer.passport.copyRelation":"Copy relation","viewer.passport.copyNode":"Copy node","viewer.passport.copyPinned":"Copy link to pinned relationship","viewer.passport.copySource":"Copy link to source node","viewer.passport.copy.focused.success":"Focused node link copied","viewer.passport.copy.pinned.success":"Pinned relationship link copied","viewer.passport.copy.focused.failed":"Could not copy focused node link","viewer.passport.copy.pinned.failed":"Could not copy pinned relationship link","viewer.passport.relationship.none":"No connected relationships","viewer.passport.relationship.count.one":"{count} relation","viewer.passport.relationship.count.other":"{count} relations","viewer.passport.relationship.show.one":"Show {count} connected relationship","viewer.passport.relationship.show.other":"Show {count} connected relationships","viewer.passport.relationship.summary":"{out} outgoing · {in} incoming{loops}","viewer.passport.relationship.loops":" · {count} loop","viewer.passport.relationship.explorer":"Direct relationship explorer","viewer.passport.relationship.help":"Use arrow keys to explore relationships. Press Enter or Space to pin details; Escape clears.","viewer.passport.relationship.loopsBack":"loops back","viewer.passport.relationship.connectsTo":"connects to","viewer.passport.relationship.connectsFrom":"connects from","viewer.passport.relationship.pinned":"Pinned relationship · {from} → {to} · {label}","viewer.passport.relationship.inspect":"Inspect relationship {index} of {total}: {from} to {to}, {label}. Press Enter for details.","viewer.passport.relationship.group.out":"Outgoing","viewer.passport.relationship.group.in":"Incoming","viewer.passport.relationship.group.loop":"Self loops","viewer.passport.relationship.row":"{group}: {relationship}, {neighbor}","viewer.passport.relationship.direction.out":"OUT →","viewer.passport.relationship.direction.in":"← IN","viewer.passport.relationship.direction.loop":"LOOP","viewer.passport.sourceCount.one":"{count} verified source reference","viewer.passport.sourceCount.other":"{count} verified source references","viewer.passport.sourceMarker":"SRC","viewer.passport.beacon.one":"{count} verified source; focus this node to inspect","viewer.passport.beacon.other":"{count} verified sources; focus this node to inspect","viewer.passport.repository.open":"Open verified repository revision {revision}","viewer.passport.source.open":"Open verified source {path} at revision {revision}","viewer.passport.source.openLink":"Open ↗","viewer.passport.reach.upstream.one":"Trace {count} upstream authored node","viewer.passport.reach.upstream.other":"Trace {count} upstream authored nodes","viewer.passport.reach.downstream.one":"Trace {count} downstream authored node","viewer.passport.reach.downstream.other":"Trace {count} downstream authored nodes","viewer.passport.reach.noUpstream":"No upstream authored nodes","viewer.passport.reach.noDownstream":"No downstream authored nodes","viewer.passport.reach.status":"{direction} · {nodes} nodes · {links} links · max {hops} hops","viewer.route.eyebrow":"Path","viewer.route.start":"Click where the path starts","viewer.route.start.find":"Find start","viewer.route.start.find.aria":"Find a route start","viewer.route.copy":"Copy link","viewer.route.copy.aria":"Copy link to traced route","viewer.route.clear":"Clear","viewer.route.clear.aria":"Clear route probe","viewer.route.traced":"Path","viewer.route.pickTwo":"Click two nodes on the diagram","viewer.route.pickOne":"Click a node on the diagram","viewer.route.controls":"Route journey controls","viewer.route.previous":"Previous route position","viewer.route.play":"Play route journey","viewer.route.pause":"Pause route journey","viewer.route.replay":"Replay route journey","viewer.route.next":"Next route position","viewer.route.journey":"Journey","viewer.route.pause.label":"Pause","viewer.route.replay.label":"Replay","viewer.route.overview":"Overview","viewer.route.overview.aria":"Show complete route overview","viewer.route.instructions":"Click a start, then an end. Paths follow the arrows.","viewer.route.destination":"Where does the path from {label} end?","viewer.route.destination.find":"Find target","viewer.route.destination.find.aria":"Find a reachable route destination","viewer.route.differentDestination":"Choose a different destination","viewer.route.distinct":"Pick two different nodes.","viewer.route.unreachable":"Cannot reach {label} from here","viewer.route.unreachable.detail":"{target} cannot be reached from {source} along the arrows. Pick a highlighted node.","viewer.route.start.instructions":"Next, pick the end. Only nodes you can reach will light up.","viewer.route.copy.success":"Traced route link copied","viewer.route.copy.failed":"Could not copy traced route link","viewer.route.position":"Route position {index} of {total}: {label}","viewer.route.step":"Step {index} of {total} · {phase} · {label}","viewer.route.motionRequired":"Automatic journey requires Live motion","viewer.route.trigger.clear":"Clear traced route","viewer.route.overview.status":"{nodes} · {hops} · shortest path","viewer.route.overview.node.one":"{count} node","viewer.route.overview.node.other":"{count} nodes","viewer.route.overview.hop.one":"{count} step","viewer.route.overview.hop.other":"{count} steps","viewer.route.phase.playing":"Playing","viewer.route.phase.complete":"Complete","viewer.route.phase.inspecting":"Inspecting","viewer.route.destination.count.one":"{count} reachable node is highlighted. Click it.","viewer.route.destination.count.other":"{count} reachable nodes are highlighted. Click one.","viewer.route.noOutgoing":"No arrows lead out of this node. Clear it and pick another start.","viewer.route.result.title":"{source} to {target}","viewer.route.finder.source.title":"Choose route start","viewer.route.finder.source.placeholder":"Search route sources","viewer.route.finder.source.empty":"No matching route sources","viewer.route.finder.source.results":"Nodes that can start a route","viewer.route.finder.source.noun":"route sources","viewer.route.finder.source.badge":"start","viewer.route.finder.target.title":"Destination from {label}","viewer.route.finder.target.placeholder":"Search reachable destinations","viewer.route.finder.target.empty":"No matching reachable destinations","viewer.route.finder.target.results":"Reachable route destinations","viewer.route.finder.target.noun":"reachable destinations","viewer.route.hop.one":"{count} hop","viewer.route.hop.other":"{count} hops","viewer.lens.eyebrow":"Semantic lens","viewer.lens.title":"Compare system roles","viewer.lens.close":"Close semantic lens","viewer.lens.instruction":"Choose up to two semantic kinds. One reveals its real traffic; two compare only direct authored relationships.","viewer.lens.kinds":"Semantic kinds","viewer.lens.choose":"Choose a kind to inspect its nodes and touching relationships.","viewer.lens.copy":"Copy link to semantic lens","viewer.lens.clear":"Clear semantic lens","viewer.lens.open":"Open semantic lens","viewer.lens.openActive":"Open active semantic lens","viewer.lens.legend":"Semantic legend","viewer.lens.legend.inspect.one":"Inspect {label}, {count} node","viewer.lens.legend.inspect.other":"Inspect {label}, {count} nodes","viewer.lens.kind.count.one":"{label}, {count} node","viewer.lens.kind.count.other":"{label}, {count} nodes","viewer.lens.compare.one":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} direct relationship","viewer.lens.compare.other":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} direct relationships","viewer.lens.single":"{nodes} · {relationships} · connected peers remain visible","viewer.lens.node.one":"{count} {label} node","viewer.lens.node.other":"{count} {label} nodes","viewer.lens.relationship.one":"{count} touching relationship","viewer.lens.relationship.other":"{count} touching relationships","viewer.radar.title":"Semantic radar","viewer.radar.building":"Building overview","viewer.radar.openFull":"Open full semantic radar","viewer.radar.open":"Open radar","viewer.radar.close":"Close semantic radar","viewer.radar.surface":"Diagram overview. Click a node to focus it, or use arrow keys to pan.","viewer.radar.click":"Click node","viewer.radar.drag":"Drag to pan","viewer.radar.space":"Semantic radar needs more MAP space.","viewer.radar.nodes":"Semantic diagram radar nodes","viewer.radar.focus":"Focus {label} from Semantic Radar","viewer.radar.status":"{count} nodes · {viewport}","viewer.radar.fullMap":"{count} nodes · full map","viewer.radar.compacted":"Radar compacted to avoid covering the Semantic Passport or MAP controls.","viewer.radar.cancelWaiting":"Cancel semantic radar waiting for more MAP space","viewer.radar.needsSpace":"Semantic radar needs more visible MAP space","viewer.radar.viewport.full":"full map","viewer.radar.viewport.width":"{percent}% width","viewer.radar.viewport.scale":"{percent}% viewport","viewer.nav.controls":"Diagram view controls","viewer.nav.route":"Trace a directed route","viewer.nav.route.title":"Trace route (R)","viewer.nav.route.short":"PATH","viewer.nav.radar":"Open semantic radar","viewer.nav.radar.title":"Semantic radar (M)","viewer.nav.radar.short":"MAP","viewer.nav.lens":"Open semantic lens","viewer.nav.lens.title":"Semantic lens (L)","viewer.nav.lens.short":"LENS","viewer.nav.find":"Find a node","viewer.nav.find.title":"Find a node (/)","viewer.outline.title":"Node index","viewer.rail.show":"Notes \u0026 index","viewer.rail.controls":"Side panel","viewer.rail.collapse":"Collapse side panel","viewer.rail.bottom":"Move panel below the diagram","viewer.rail.right":"Move panel beside the diagram","viewer.nav.guide":"Open diagram guide","viewer.nav.guide.title":"Diagram guide (?)","viewer.nav.zoomOut":"Zoom out","viewer.nav.zoomOut.title":"Zoom out (-)","viewer.nav.reset":"Reset diagram view","viewer.nav.reset.title":"Reset view (0)","viewer.nav.read":"READ","viewer.nav.zoomIn":"Zoom in","viewer.nav.zoomIn.title":"Zoom in (+)","viewer.nav.camera":"{hint}. Reset diagram view","viewer.nav.camera.title":"{semantic}{hint} · reset view (0)","viewer.nav.camera.semantic":"Semantic camera active · ","viewer.nav.level.map":"MAP","viewer.nav.level.read":"READ","viewer.nav.level.full":"FULL","viewer.nav.level.auto":"AUTO","viewer.nav.detail.map":"Zoom in to reveal relationship labels and node context","viewer.nav.detail.read":"Zoom in again to reveal tags and annotations","viewer.nav.detail.full":"Full diagram detail","viewer.intent.summary":"{label}. {out} outgoing, {in} incoming{loops}. {total} connections. Press Enter for details.","viewer.intent.loops":", {count} self loop","viewer.common.copied":"Copied","viewer.common.copyFailed":"Copy failed","viewer.common.copyLink":"Copy link","viewer.common.clear":"Clear","viewer.common.close":"Close"}}</script>
+    <script id="archify-i18n-data" type="application/json">{"locale":"en","messages":{"viewer.kind.frontend":"Frontend","viewer.kind.backend":"Backend","viewer.kind.database":"Database","viewer.kind.cloud":"Cloud","viewer.kind.security":"Security","viewer.kind.messagebus":"Message bus","viewer.kind.external":"External","viewer.kind.neutral":"Neutral","viewer.kind.node":"Node","viewer.kind.start":"Start","viewer.kind.active":"Active","viewer.kind.waiting":"Waiting","viewer.kind.decision":"Decision","viewer.kind.success":"Success","viewer.kind.failure":"Failure","viewer.toolbar.actions":"Diagram actions","viewer.theme.toggle.title":"Toggle theme (T)","viewer.theme.toggle":"Toggle color theme","viewer.theme.dark":"Dark","viewer.theme.light":"Light","viewer.preset.choose.title":"Choose visual style (S cycles)","viewer.preset.choose":"Choose visual style","viewer.preset.style":"Style","viewer.preset.menu":"Visual style","viewer.preset.identity":"Visual identity","viewer.preset.cycles":"to cycle","viewer.preset.classic":"Classic","viewer.preset.classic.short":"Classic","viewer.preset.classic.hint":"Stable technical default","viewer.preset.flow":"Signal Flow","viewer.preset.flow.short":"Flow","viewer.preset.flow.hint":"Motion-forward presentation","viewer.preset.blueprint":"Blueprint","viewer.preset.blueprint.hint":"Engineering review","viewer.preset.editorial":"Editorial","viewer.preset.editorial.hint":"Publication and launch notes","viewer.preset.badge.signalFlow":"SIGNAL FLOW","viewer.preset.badge.blueprint":"BLUEPRINT / REV 01","viewer.preset.badge.editorial":"EDITORIAL / FIELD NOTE","viewer.preset.badge.editorialPlate":"ARCHIFY / PLATE 04","viewer.preset.current":"Visual style: {style}. Choose visual style","viewer.motion.live":"Live","viewer.motion.still":"Still","viewer.motion.pause":"Pause motion","viewer.motion.resume":"Resume motion","viewer.motion.reduced":"Motion paused by reduced-motion preference","viewer.motion.hidden":"Motion paused while this page is hidden","viewer.motion.yielding":"Pause motion; currently yielding to {owner}","viewer.motion.yielding.title":"Live preview enabled · yielding to {owner}","viewer.owner.route":"Route Probe","viewer.owner.lens":"Semantic Lens","viewer.owner.relationship":"Relationship Preview","viewer.owner.intent":"Intent Trace","viewer.owner.focus":"semantic focus","viewer.owner.legend":"legend preview","viewer.owner.reader":"reader interaction","viewer.present.enter":"Enter presentation stage","viewer.present.enter.title":"Presentation stage (F)","viewer.present.exit":"Exit presentation stage","viewer.present.exit.title":"Exit presentation stage (F or Escape)","viewer.present.present":"Present","viewer.present.exit.label":"Exit","viewer.export.button":"Export","viewer.export.button.title":"Export diagram (E)","viewer.export.diagram":"Export diagram","viewer.export.menu":"Export","viewer.export.subtitle":"Portable, clean outputs","viewer.export.share":"Share","viewer.export.shareCard":"Share Card","viewer.export.routeShareCard":"Route Share Card","viewer.export.reachShareCard":"Reach Share Card","viewer.export.copyDiagram":"Copy diagram","viewer.export.clipboardPng":"PNG to clipboard","viewer.export.raster":"Raster images","viewer.export.image":"Image","viewer.export.lossless":"Lossless image","viewer.export.compact":"Compact image","viewer.export.modern":"Modern image","viewer.export.vectorMotion":"Vector and motion","viewer.export.vectorMotion.heading":"Vector \u0026 motion","viewer.export.editable":"Editable vector","viewer.export.svg.auto":"SVG · Auto","viewer.export.svg.auto.hint":"Matches host theme","viewer.export.svg.light":"SVG · Light","viewer.export.svg.light.hint":"Always light","viewer.export.svg.dark":"SVG · Dark","viewer.export.svg.dark.hint":"Always dark","viewer.export.motion6s":"6s motion","viewer.export.gif.hint":"6s loop · PowerPoint","viewer.export.encodingGif":"Creating animated GIF…","viewer.export.downloadedGif":"Downloaded GIF","viewer.export.error.gifRequirements":"GIF motion export requires diagram connections and browser Canvas support","viewer.export.background":"Background","viewer.export.scale":"Export scale","viewer.export.gifFps":"GIF frame rate","viewer.export.gifFps.hint":"Higher frame rates give smoother motion and larger files. GIF timing uses 10 ms steps.","viewer.export.scale.auto":"Default","viewer.export.scale.hint":"PNG / JPEG / WebP / GIF / WebM · Default: images 4×, motion up to 1280px. SVG stays vector.","viewer.export.error.scale":"Choose an export scale: 1×, 3×, 5×, 7× or 10×","viewer.export.error.scaleTooLarge":"This scale exceeds the export size limit. Choose a lower scale.","viewer.export.transparent":"Transparent background","viewer.export.transparent.hint":"PNG / WebP / WebM / GIF / SVG · JPEG stays opaque","viewer.export.unsupported":"Not supported by this browser","viewer.export.clipboardUnsupported":"Clipboard image write not supported by this browser","viewer.export.clipboardUnsupported.short":"Clipboard image write not supported in this browser.","viewer.export.motionUnavailable":"Motion capture unavailable in this browser","viewer.export.webmUnavailable":"WebM unavailable in this browser","viewer.export.failed":"Export failed: {message}","viewer.export.unknownVariant":"Unknown Share Card variant: {variant}","viewer.export.routeRequired":"Trace a route before exporting a Route Share Card","viewer.export.reachRequired":"Trace authored reach before exporting a Reach Share Card","viewer.export.unknown":"unknown","viewer.export.routeFailed":"Route Share Card export failed: {message}","viewer.export.reachFailed":"Reach Share Card export failed: {message}","viewer.export.copyFailed":"Copy failed: {message}","viewer.export.copiedPng":"Copied PNG to clipboard","viewer.export.downloadedRoute":"Downloaded Route Share Card","viewer.export.downloadedReach":"Downloaded Reach Share Card","viewer.export.downloadedWebm":"Downloaded WebM","viewer.export.recording":"Recording 6 seconds of motion…","viewer.export.card.routeSummary.one":"Path: {source} → {target} · {count} step","viewer.export.card.routeSummary.other":"Path: {source} → {target} · {count} steps","viewer.export.card.reachSummary":"Authored {direction} from {origin} · {nodes} · {links} · max {hops}","viewer.export.card.node.one":"{count} node","viewer.export.card.node.other":"{count} nodes","viewer.export.card.link.one":"{count} link","viewer.export.card.link.other":"{count} links","viewer.export.card.hop.one":"{count} hop","viewer.export.card.hop.other":"{count} hops","viewer.export.card.routeBadge":"ARCHIFY · ROUTE · {hops}","viewer.export.card.reachBadge":"ARCHIFY · {direction} REACH","viewer.export.direction.upstream":"Upstream","viewer.export.direction.downstream":"Downstream","viewer.export.error.canvasUnavailable":"Canvas unavailable for {label}","viewer.export.error.contextUnavailable":"2D canvas context unavailable for {label}","viewer.export.error.toBlobUnavailable":"canvas.toBlob unavailable for {label}","viewer.export.error.toBlobNull":"canvas.toBlob returned no data for {label}","viewer.export.error.variantsCombined":"Share Card variants cannot be combined","viewer.export.error.viewerState":"Share Card export could not remove temporary viewer state","viewer.export.error.routeState":"Route Card export could not preserve the resolved route safely","viewer.export.error.reachState":"Reach Card export could not preserve authored reach safely","viewer.export.error.webmRequirements":"WebM motion export requires a trace animation and browser MediaRecorder support","viewer.export.error.mediaRecorder":"MediaRecorder failed","viewer.export.error.emptyWebm":"MediaRecorder produced an empty WebM","viewer.export.error.webmBackground":"SVG background could not be loaded for WebM export","viewer.guide.title":"Explore this system","viewer.focus.selectedNodes":"{count} selected nodes","viewer.guide.eyebrow":"Diagram guide","viewer.guide.close":"Close diagram guide","viewer.guide.inspecting":"Inspecting compiled semantics","viewer.guide.actions":"Diagram exploration actions","viewer.guide.find":"Find any node","viewer.guide.find.hint":"Search labels, responsibilities, kinds, and stable IDs.","viewer.guide.route":"Trace a route","viewer.guide.route.aria":"Trace a directed route","viewer.guide.route.hint":"Ask how two semantic nodes connect in authored direction.","viewer.guide.map":"See the whole system","viewer.guide.map.hint":"Open Semantic Radar with a live viewport and stable nodes.","viewer.guide.lens":"Compare semantic kinds","viewer.guide.lens.hint":"Count roles, reveal their traffic, and compare direct authored links.","viewer.guide.present":"Enter Presentation Stage","viewer.guide.present.hint":"Give the live diagram the viewport without changing export.","viewer.guide.shortcuts":"Additional keyboard shortcuts","viewer.guide.shortcut.export":"Export","viewer.guide.shortcut.theme":"Theme","viewer.guide.shortcut.style":"Style","viewer.guide.shortcut.reset":"Reset","viewer.guide.shortcut.zoomIn":"Zoom in","viewer.guide.shortcut.zoomOut":"Zoom out","viewer.guide.shortcut.close":"Close","viewer.guide.facts":"{nodes} · {relationships}","viewer.guide.fact.node.one":"{count} semantic node","viewer.guide.fact.node.other":"{count} semantic nodes","viewer.guide.fact.relationship.one":"{count} relationship","viewer.guide.fact.relationship.other":"{count} relationships","viewer.guide.open":"Open diagram guide","viewer.finder.title":"Find a node","viewer.finder.close":"Close node finder","viewer.finder.placeholder":"Search labels or IDs","viewer.finder.search":"Search diagram nodes","viewer.finder.results":"Diagram nodes","viewer.finder.empty":"No matching nodes","viewer.finder.result.focus":"Focus {label}","viewer.finder.result.routeStart":"Choose {label} as route start","viewer.finder.result.routeTarget":"Choose {label} as route destination, {links}","viewer.finder.status.empty":"No matching nodes","viewer.finder.status.count.one":"{count} matching node","viewer.finder.status.count.other":"{count} matching nodes","viewer.finder.noun.nodes":"nodes","viewer.finder.link.one":"{count} link","viewer.finder.link.other":"{count} links","viewer.finder.result.focus.one":"Focus {label}, {count} related connection","viewer.finder.result.focus.other":"Focus {label}, {count} related connections","viewer.finder.status.filtered":"{visible} of {available} {noun}","viewer.finder.status.all":"{available} {noun}","viewer.passport.eyebrow":"Semantic passport","viewer.passport.metadata":"Node metadata","viewer.passport.evidence":"Verified source evidence","viewer.passport.verified":"Verified source","viewer.passport.verificationScope":"Verified against local Git at the pinned revision. Remote access has not been checked.","viewer.passport.reach":"Authored reach","viewer.passport.reach.trace":"Trace authored reachability","viewer.passport.upstream":"Upstream","viewer.passport.downstream":"Downstream","viewer.passport.upstream.trace":"Trace upstream authored reachability","viewer.passport.downstream.trace":"Trace downstream authored reachability","viewer.passport.close":"Close semantic passport","viewer.passport.move":"Move semantic passport. Drag, use arrow keys, or press Home to reset.","viewer.passport.copy":"Copy link","viewer.passport.copy.focus":"Copy link to focused node","viewer.passport.relations":"Relations","viewer.passport.relations.show":"Show connected relationships","viewer.passport.relations.hide":"Hide connected relationships","viewer.passport.relations.list":"Connected relationships","viewer.passport.copyRelation":"Copy relation","viewer.passport.copyNode":"Copy node","viewer.passport.copyPinned":"Copy link to pinned relationship","viewer.passport.copySource":"Copy link to source node","viewer.passport.copy.focused.success":"Focused node link copied","viewer.passport.copy.pinned.success":"Pinned relationship link copied","viewer.passport.copy.focused.failed":"Could not copy focused node link","viewer.passport.copy.pinned.failed":"Could not copy pinned relationship link","viewer.passport.relationship.none":"No connected relationships","viewer.passport.relationship.count.one":"{count} relation","viewer.passport.relationship.count.other":"{count} relations","viewer.passport.relationship.show.one":"Show {count} connected relationship","viewer.passport.relationship.show.other":"Show {count} connected relationships","viewer.passport.relationship.summary":"{out} outgoing · {in} incoming{loops}","viewer.passport.relationship.loops":" · {count} loop","viewer.passport.relationship.explorer":"Direct relationship explorer","viewer.passport.relationship.help":"Use arrow keys to explore relationships. Press Enter or Space to pin details; Escape clears.","viewer.passport.relationship.loopsBack":"loops back","viewer.passport.relationship.connectsTo":"connects to","viewer.passport.relationship.connectsFrom":"connects from","viewer.passport.relationship.pinned":"Pinned relationship · {from} → {to} · {label}","viewer.passport.relationship.inspect":"Inspect relationship {index} of {total}: {from} to {to}, {label}. Press Enter for details.","viewer.passport.relationship.group.out":"Outgoing","viewer.passport.relationship.group.in":"Incoming","viewer.passport.relationship.group.loop":"Self loops","viewer.passport.relationship.row":"{group}: {relationship}, {neighbor}","viewer.passport.relationship.direction.out":"OUT →","viewer.passport.relationship.direction.in":"← IN","viewer.passport.relationship.direction.loop":"LOOP","viewer.passport.sourceCount.one":"{count} verified source reference","viewer.passport.sourceCount.other":"{count} verified source references","viewer.passport.sourceMarker":"SRC","viewer.passport.beacon.one":"{count} verified source; focus this node to inspect","viewer.passport.beacon.other":"{count} verified sources; focus this node to inspect","viewer.passport.repository.open":"Open verified repository revision {revision}","viewer.passport.source.open":"Open verified source {path} at revision {revision}","viewer.passport.source.openLink":"Open ↗","viewer.passport.reach.upstream.one":"Trace {count} upstream authored node","viewer.passport.reach.upstream.other":"Trace {count} upstream authored nodes","viewer.passport.reach.downstream.one":"Trace {count} downstream authored node","viewer.passport.reach.downstream.other":"Trace {count} downstream authored nodes","viewer.passport.reach.noUpstream":"No upstream authored nodes","viewer.passport.reach.noDownstream":"No downstream authored nodes","viewer.passport.reach.status":"{direction} · {nodes} nodes · {links} links · max {hops} hops","viewer.route.eyebrow":"Path","viewer.route.start":"Click where the path starts","viewer.route.start.find":"Find start","viewer.route.start.find.aria":"Find a route start","viewer.route.copy":"Copy link","viewer.route.copy.aria":"Copy link to traced route","viewer.route.clear":"Clear","viewer.route.clear.aria":"Clear route probe","viewer.route.traced":"Path","viewer.route.pickTwo":"Click two nodes on the diagram","viewer.route.pickOne":"Click a node on the diagram","viewer.route.controls":"Route journey controls","viewer.route.previous":"Previous route position","viewer.route.play":"Play route journey","viewer.route.pause":"Pause route journey","viewer.route.replay":"Replay route journey","viewer.route.next":"Next route position","viewer.route.journey":"Journey","viewer.route.pause.label":"Pause","viewer.route.replay.label":"Replay","viewer.route.overview":"Overview","viewer.route.overview.aria":"Show complete route overview","viewer.route.instructions":"Click a start, then an end. Paths follow the arrows.","viewer.route.destination":"Where does the path from {label} end?","viewer.route.destination.find":"Find target","viewer.route.destination.find.aria":"Find a reachable route destination","viewer.route.differentDestination":"Choose a different destination","viewer.route.distinct":"Pick two different nodes.","viewer.route.unreachable":"Cannot reach {label} from here","viewer.route.unreachable.detail":"{target} cannot be reached from {source} along the arrows. Pick a highlighted node.","viewer.route.start.instructions":"Next, pick the end. Only nodes you can reach will light up.","viewer.route.copy.success":"Traced route link copied","viewer.route.copy.failed":"Could not copy traced route link","viewer.route.position":"Route position {index} of {total}: {label}","viewer.route.step":"Step {index} of {total} · {phase} · {label}","viewer.route.motionRequired":"Automatic journey requires Live motion","viewer.route.trigger.clear":"Clear traced route","viewer.route.overview.status":"{nodes} · {hops} · shortest path","viewer.route.overview.node.one":"{count} node","viewer.route.overview.node.other":"{count} nodes","viewer.route.overview.hop.one":"{count} step","viewer.route.overview.hop.other":"{count} steps","viewer.route.phase.playing":"Playing","viewer.route.phase.complete":"Complete","viewer.route.phase.inspecting":"Inspecting","viewer.route.destination.count.one":"{count} reachable node is highlighted. Click it.","viewer.route.destination.count.other":"{count} reachable nodes are highlighted. Click one.","viewer.route.noOutgoing":"No arrows lead out of this node. Clear it and pick another start.","viewer.route.result.title":"{source} to {target}","viewer.route.finder.source.title":"Choose route start","viewer.route.finder.source.placeholder":"Search route sources","viewer.route.finder.source.empty":"No matching route sources","viewer.route.finder.source.results":"Nodes that can start a route","viewer.route.finder.source.noun":"route sources","viewer.route.finder.source.badge":"start","viewer.route.finder.target.title":"Destination from {label}","viewer.route.finder.target.placeholder":"Search reachable destinations","viewer.route.finder.target.empty":"No matching reachable destinations","viewer.route.finder.target.results":"Reachable route destinations","viewer.route.finder.target.noun":"reachable destinations","viewer.route.hop.one":"{count} hop","viewer.route.hop.other":"{count} hops","viewer.lens.eyebrow":"Semantic lens","viewer.lens.title":"Compare system roles","viewer.lens.close":"Close semantic lens","viewer.lens.instruction":"Choose up to two semantic kinds. One reveals its real traffic; two compare only direct authored relationships.","viewer.lens.kinds":"Semantic kinds","viewer.lens.choose":"Choose a kind to inspect its nodes and touching relationships.","viewer.lens.copy":"Copy link to semantic lens","viewer.lens.clear":"Clear semantic lens","viewer.lens.open":"Open semantic lens","viewer.lens.openActive":"Open active semantic lens","viewer.lens.legend":"Semantic legend","viewer.lens.legend.inspect.one":"Inspect {label}, {count} node","viewer.lens.legend.inspect.other":"Inspect {label}, {count} nodes","viewer.lens.kind.count.one":"{label}, {count} node","viewer.lens.kind.count.other":"{label}, {count} nodes","viewer.lens.compare.one":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} direct relationship","viewer.lens.compare.other":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} direct relationships","viewer.lens.single":"{nodes} · {relationships} · connected peers remain visible","viewer.lens.node.one":"{count} {label} node","viewer.lens.node.other":"{count} {label} nodes","viewer.lens.relationship.one":"{count} touching relationship","viewer.lens.relationship.other":"{count} touching relationships","viewer.radar.title":"Semantic radar","viewer.radar.building":"Building overview","viewer.radar.openFull":"Open full semantic radar","viewer.radar.open":"Open radar","viewer.radar.close":"Close semantic radar","viewer.radar.surface":"Diagram overview. Click a node to focus it, or use arrow keys to pan.","viewer.radar.click":"Click node","viewer.radar.drag":"Drag to pan","viewer.radar.space":"Semantic radar needs more MAP space.","viewer.radar.nodes":"Semantic diagram radar nodes","viewer.radar.focus":"Focus {label} from Semantic Radar","viewer.radar.status":"{count} nodes · {viewport}","viewer.radar.fullMap":"{count} nodes · full map","viewer.radar.compacted":"Radar compacted to avoid covering the Semantic Passport or MAP controls.","viewer.radar.cancelWaiting":"Cancel semantic radar waiting for more MAP space","viewer.radar.needsSpace":"Semantic radar needs more visible MAP space","viewer.radar.viewport.full":"full map","viewer.radar.viewport.width":"{percent}% width","viewer.radar.viewport.scale":"{percent}% viewport","viewer.nav.controls":"Diagram view controls","viewer.nav.route":"Trace a directed route","viewer.nav.route.title":"Trace route (R)","viewer.nav.route.short":"PATH","viewer.nav.radar":"Open semantic radar","viewer.nav.radar.title":"Semantic radar (M)","viewer.nav.radar.short":"MAP","viewer.nav.lens":"Open semantic lens","viewer.nav.lens.title":"Semantic lens (L)","viewer.nav.lens.short":"LENS","viewer.nav.find":"Find a node","viewer.nav.find.title":"Find a node (/)","viewer.outline.title":"Node index","viewer.rail.show":"Notes \u0026 index","viewer.rail.controls":"Side panel","viewer.rail.collapse":"Collapse side panel","viewer.rail.bottom":"Move panel below the diagram","viewer.rail.right":"Move panel beside the diagram","viewer.nav.guide":"Open diagram guide","viewer.nav.guide.title":"Diagram guide (?)","viewer.nav.zoomOut":"Zoom out","viewer.nav.zoomOut.title":"Zoom out (-)","viewer.nav.reset":"Reset diagram view","viewer.nav.reset.title":"Reset view (0)","viewer.nav.read":"READ","viewer.nav.zoomIn":"Zoom in","viewer.nav.zoomIn.title":"Zoom in (+)","viewer.nav.camera":"{hint}. Reset diagram view","viewer.nav.camera.title":"{semantic}{hint} · reset view (0)","viewer.nav.camera.semantic":"Semantic camera active · ","viewer.nav.level.map":"MAP","viewer.nav.level.read":"READ","viewer.nav.level.full":"FULL","viewer.nav.level.auto":"AUTO","viewer.nav.detail.map":"Zoom in to reveal relationship labels and node context","viewer.nav.detail.read":"Zoom in again to reveal tags and annotations","viewer.nav.detail.full":"Full diagram detail","viewer.intent.summary":"{label}. {out} outgoing, {in} incoming{loops}. {total} connections. Press Enter for details.","viewer.intent.loops":", {count} self loop","viewer.common.copied":"Copied","viewer.common.copyFailed":"Copy failed","viewer.common.copyLink":"Copy link","viewer.common.clear":"Clear","viewer.common.close":"Close"}}</script>
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="ARCHIFY / PLATE 04">
@@ -4988,16 +5030,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <desc id="archify-diagram-description">Grid placement demo — row/col instead of manual pos</desc>
         <!-- Definitions -->
         <defs>
-          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <marker id="arrowhead" markerWidth="11" markerHeight="7" refX="9" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" class="m-default" />
           </marker>
-          <marker id="arrowhead-emphasis" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <marker id="arrowhead-emphasis" markerWidth="11" markerHeight="7" refX="9" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" class="m-emphasis" />
           </marker>
-          <marker id="arrowhead-security" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <marker id="arrowhead-security" markerWidth="11" markerHeight="7" refX="9" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" class="m-security" />
           </marker>
-          <marker id="arrowhead-dashed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <marker id="arrowhead-dashed" markerWidth="11" markerHeight="7" refX="9" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" class="m-dashed" />
           </marker>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -5055,7 +5097,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="100" y="236" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">You</text>
-        <text data-detail="context" x="100" y="252" class="t-muted" font-size="9" text-anchor="middle">NL / Mermaid</text>
+        <text data-detail="context" data-text-field="sublabel" x="100" y="252" class="t-muted" font-size="9" text-anchor="middle">NL / Mermaid</text>
         </g>
 
         <g id="node-agents" data-node-id="agents" data-node-label="Agent Hosts" tabindex="0" role="button" aria-label="Focus Agent Hosts, Claude · Codex, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Claude · Codex" data-node-context="Architecture component">
@@ -5069,7 +5111,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="244" y="236" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Agent Hosts</text>
-        <text data-detail="context" x="244" y="252" class="t-muted" font-size="9" text-anchor="middle">Claude · Codex</text>
+        <text data-detail="context" data-text-field="sublabel" x="244" y="252" class="t-muted" font-size="9" text-anchor="middle">Claude · Codex</text>
         </g>
 
         <g id="node-skill" data-node-id="skill" data-node-label="SKILL.md" tabindex="0" role="button" aria-label="Focus SKILL.md, layout rules, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="layout rules" data-node-context="Architecture component">
@@ -5083,7 +5125,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <circle cx="6.3" cy="4.8" r=".7" class="sigil-fill"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="244" y="128" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">SKILL.md</text>
-        <text data-detail="context" x="244" y="144" class="t-muted" font-size="9" text-anchor="middle">layout rules</text>
+        <text data-detail="context" data-text-field="sublabel" x="244" y="144" class="t-muted" font-size="9" text-anchor="middle">layout rules</text>
         </g>
 
         <g id="node-ir" data-node-id="ir" data-node-label="JSON IR" tabindex="0" role="button" aria-label="Focus JSON IR, schema v1, archify/ skill package" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="schema v1" data-node-context="archify/ skill package">
@@ -5097,7 +5139,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="388" y="236" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">JSON IR</text>
-        <text data-detail="context" x="388" y="252" class="t-muted" font-size="9" text-anchor="middle">schema v1</text>
+        <text data-detail="context" data-text-field="sublabel" x="388" y="252" class="t-muted" font-size="9" text-anchor="middle">schema v1</text>
         </g>
 
         <g id="node-schemas" data-node-id="schemas" data-node-label="Schema" tabindex="0" role="button" aria-label="Focus Schema, ajv, archify/ skill package" aria-pressed="false" data-node-kind="security" data-node-sublabel="ajv" data-node-context="archify/ skill package">
@@ -5109,7 +5151,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="388" y="128" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Schema</text>
-        <text data-detail="context" x="388" y="144" class="t-muted" font-size="9" text-anchor="middle">ajv</text>
+        <text data-detail="context" data-text-field="sublabel" x="388" y="144" class="t-muted" font-size="9" text-anchor="middle">ajv</text>
         </g>
 
         <g id="node-renderers" data-node-id="renderers" data-node-label="Renderers ×5" tabindex="0" role="button" aria-label="Focus Renderers ×5, archify/ skill package" aria-pressed="false" data-node-kind="backend" data-node-context="archify/ skill package">
@@ -5154,7 +5196,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="964" y="236" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">HTML</text>
-        <text data-detail="context" x="964" y="252" class="t-muted" font-size="9" text-anchor="middle">artifact</text>
+        <text data-detail="context" data-text-field="sublabel" x="964" y="252" class="t-muted" font-size="9" text-anchor="middle">artifact</text>
         </g>
 
         <!-- Connection labels -->
@@ -5167,7 +5209,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 
 
-        <!-- Boundary labels (foreground masks keep routes out of titles) -->
+        <!-- Boundary labels (transparent backing rectangles retain layout geometry) -->
         <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="archify/ skill package">
           <rect data-graph-role="structural-frame-label-mask" x="302" y="80" width="128.8" height="16" rx="3" class="c-mask"/>
           <text data-boundary-label="" x="306" y="93" class="t-cloud" font-size="9" font-weight="600">archify/ skill package</text>
@@ -5639,14 +5681,14 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     /* ============================================================
        Export — Share Card / PNG / JPEG / WebP / SVG / WebM and clipboard
 
-       Raster exports are always rendered at 4x source resolution for
+       Raster exports default to 4x source resolution for
        maximum sharpness. The trick: we set the serialized SVG's
        `width`/`height` to viewBox * 4 so the browser rasterizes the
        vectors at that resolution natively. drawImage then draws at
        the image's natural size (no upscaling = no blur).
 
-       JPEG/WebP paint the current theme's background explicitly since
-       those formats have no alpha channel.
+       JPEG always paints the current theme's background. PNG/WebP can
+       preserve alpha; transparent WebM stores a separate VP8 alpha plane.
        ============================================================ */
     (function () {
       var RASTER_SCALE = 4;
@@ -6192,10 +6234,18 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         }
 
         // Figures draw the diagram on a painted canvas card, like the Viewer.
-        if (opts.figure) bgRect.setAttribute('fill', 'none');
+        if (opts.figure || opts.transparentBackground) bgRect.setAttribute('fill', 'none');
+        if (opts.transparentBackground) {
+          clone.style.setProperty('background', 'none', 'important');
+          // Every alpha-capable format uses this serializer. A transparent
+          // canvas must omit the grid too, including raster and motion exports.
+          Array.prototype.forEach.call(clone.querySelectorAll('rect[fill="url(#grid)"]'), function (rect) { rect.remove(); });
+        }
 
         clone.insertBefore(style, clone.firstChild);
-        clone.insertBefore(bgRect, style.nextSibling);
+        // Auto-theme CSS paints .c-bg-rect even when its fill attribute is none.
+        // Omit the background element entirely for transparent exports.
+        if (!opts.transparentBackground) clone.insertBefore(bgRect, style.nextSibling);
 
         // The XML declaration pins UTF-8: without it, consumers that guess an
         // encoding instead of defaulting to UTF-8 mangle non-ASCII text.
@@ -6234,6 +6284,19 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           if (vbW * s * vbH * s <= MAX_CANVAS_PIXELS) return s;
         }
         return Math.sqrt(MAX_CANVAS_PIXELS / (vbW * vbH)) * 0.999;
+      }
+
+      function exportScale(options, fallback, width, height) {
+        if (!options || options.scale == null || options.scale === 'auto') return fallback;
+        var scale = Number(options.scale);
+        if ([1, 3, 5, 7, 10].indexOf(scale) === -1) {
+          var invalid = exportError('viewer.export.error.scale'); invalid.archifyExportSize = true; throw invalid;
+        }
+        if (Math.ceil(width * scale) * Math.ceil(height * scale) > MAX_CANVAS_PIXELS ||
+            width * scale > 8192 || height * scale > 8192) {
+          var oversized = exportError('viewer.export.error.scaleTooLarge'); oversized.archifyExportSize = true; throw oversized;
+        }
+        return scale;
       }
 
       // Raster exports reproduce the Viewer page without its controls: the
@@ -6277,10 +6340,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         };
       }
 
-      function paintFigure(ctx, layout) {
+      function paintFigure(ctx, layout, transparentBackground) {
         var m = FIGURE_MARGIN;
-        ctx.fillStyle = layout.bg;
-        ctx.fillRect(0, 0, layout.width, layout.height);
+        if (!transparentBackground) {
+          ctx.fillStyle = layout.bg;
+          ctx.fillRect(0, 0, layout.width, layout.height);
+        }
         if (layout.title) {
           var titleMid = m + 16;
           ctx.fillStyle = layout.accent;
@@ -6298,6 +6363,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           ctx.textBaseline = 'alphabetic';
         }
         var x = m, y = m + layout.header, w = layout.cardWidth, h = layout.cardHeight, r = 16;
+        if (transparentBackground) return { x: x + FIGURE_CARD_PADDING, y: y + FIGURE_CARD_PADDING };
         function cardPath() {
           ctx.beginPath();
           if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, r);
@@ -6335,7 +6401,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return { x: x + FIGURE_CARD_PADDING, y: y + FIGURE_CARD_PADDING };
       }
 
-      function rasterize(format) {
+      function rasterize(format, options) {
+        var transparentBackground = format !== 'jpeg' && options && options.transparentBackground === true;
         // Serialize at a safe scale (RASTER_SCALE=4 by default, reduced if the
         // resulting canvas would exceed MAX_CANVAS_PIXELS). The SVG itself is
         // rasterized at target resolution natively; drawImage draws at natural
@@ -6343,8 +6410,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         var svg = document.querySelector('.diagram-container svg');
         var vb = svg.viewBox.baseVal;
         var layout = figureLayout(vb);
-        var scale = pickSafeScale(layout.width, layout.height);
-        var data = serializeSvg(scale, { figure: true });
+        var scale;
+        try { scale = exportScale(options, pickSafeScale(layout.width, layout.height), layout.width, layout.height); }
+        catch (error) { return Promise.reject(error); }
+        var data = serializeSvg(scale, { figure: true, transparentBackground: transparentBackground });
         var svgBlob = new Blob([data.svgString], { type: 'image/svg+xml;charset=utf-8' });
         var svgUrl = URL.createObjectURL(svgBlob);
 
@@ -6359,7 +6428,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
               // Paint in CSS pixels; the SVG image is already rendered at scale,
               // so drawing it at CSS size under this transform stays 1:1.
               ctx.setTransform(scale, 0, 0, scale, 0, 0);
-              var origin = paintFigure(ctx, layout);
+              var origin = paintFigure(ctx, layout, transparentBackground);
               ctx.drawImage(img, origin.x, origin.y, vb.width, vb.height);
               ctx.setTransform(1, 0, 0, 1, 0, 0);
               URL.revokeObjectURL(svgUrl);
@@ -6569,23 +6638,243 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           typeof HTMLCanvasElement.prototype.captureStream === 'function');
       }
 
+      function canEncodeAlphaWebm() {
+        return typeof VideoEncoder !== 'undefined' && typeof VideoFrame !== 'undefined';
+      }
+
+      function canEncodeGif() {
+        var svg = document.querySelector('.diagram-container svg');
+        return !!(svg && svg.querySelector('path[data-composition-points],path[data-edge-key],path[data-edge-id],path[data-animate="edge"]') && typeof HTMLCanvasElement !== 'undefined');
+      }
+
+      // GIF89a: global adaptive palette, LZW, loop extension and full-frame
+      // restore-to-background disposal. Transparency is binary, as defined by
+      // https://giflib.sourceforge.net/gifstandard/GIF89a.html.
+      async function encodeGif(canvas, paint, duration, fps, transparent) {
+        var ctx = canvas2dOrThrow(canvas, 'gif');
+        var histogram = new Map();
+        for (var sample = 0; sample < 8; sample++) {
+          paint(sample * duration / 8000);
+          var pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+          var stride = Math.max(1, Math.floor(canvas.width * canvas.height / 60000));
+          for (var p = 0; p < pixels.length; p += stride * 4) {
+            if (pixels[p + 3] < 128) continue;
+            var key = (pixels[p] >> 3) * 1024 + (pixels[p + 1] >> 3) * 32 + (pixels[p + 2] >> 3);
+            var cell = histogram.get(key);
+            if (!cell) { cell = [0, 0, 0, 0]; histogram.set(key, cell); }
+            cell[0] += pixels[p]; cell[1] += pixels[p + 1]; cell[2] += pixels[p + 2]; cell[3]++;
+          }
+        }
+        var colors = Array.from(histogram.values()).map(function (c) {
+          return [c[0] / c[3], c[1] / c[3], c[2] / c[3], c[3]];
+        });
+        if (!colors.length) colors.push([0, 0, 0, 1]);
+        function box(entries) {
+          var ranges = [0, 1, 2].map(function (axis) {
+            var min = 255, max = 0;
+            entries.forEach(function (c) { min = Math.min(min, c[axis]); max = Math.max(max, c[axis]); });
+            return max - min;
+          });
+          var axis = ranges.indexOf(Math.max.apply(null, ranges));
+          return { entries: entries, axis: axis, score: entries.length > 1 ? ranges[axis] * Math.sqrt(entries.reduce(function (n, c) { return n + c[3]; }, 0)) : 0 };
+        }
+        var boxes = [box(colors)];
+        while (boxes.length < 255) {
+          boxes.sort(function (a, b) { return b.score - a.score; });
+          var split = boxes[0];
+          if (!split.score) break;
+          split.entries.sort(function (a, b) { return a[split.axis] - b[split.axis]; });
+          var half = split.entries.reduce(function (n, c) { return n + c[3]; }, 0) / 2;
+          var weight = 0, at = 0;
+          while (at < split.entries.length - 1 && weight < half) weight += split.entries[at++][3];
+          at = Math.max(1, at);
+          boxes.splice(0, 1, box(split.entries.slice(0, at)), box(split.entries.slice(at)));
+        }
+        var palette = new Uint8Array(768);
+        boxes.forEach(function (b, i) {
+          var sum = [0, 0, 0, 0];
+          b.entries.forEach(function (c) { for (var axis = 0; axis < 3; axis++) sum[axis] += c[axis] * c[3]; sum[3] += c[3]; });
+          for (var axis = 0; axis < 3; axis++) palette[(i + 1) * 3 + axis] = Math.round(sum[axis] / sum[3]);
+        });
+        var lookup = new Uint8Array(32768);
+        for (var key = 0; key < lookup.length; key++) {
+          var r = (key >> 10) * 8 + 4, g = ((key >> 5) & 31) * 8 + 4, b = (key & 31) * 8 + 4;
+          var nearest = 1, distance = Infinity;
+          for (var c = 1; c <= boxes.length; c++) {
+            var dr = r - palette[c * 3], dg = g - palette[c * 3 + 1], db = b - palette[c * 3 + 2];
+            var d = dr * dr + dg * dg + db * db;
+            if (d < distance) { distance = d; nearest = c; }
+          }
+          lookup[key] = nearest;
+        }
+        function word(n) { return [n & 255, (n >> 8) & 255]; }
+        function lzw(indices) {
+          var out = [], bits = 0, buffer = 0, width = 9, next = 258, dictionary = new Map();
+          function emit(code) {
+            buffer |= code << bits; bits += width;
+            while (bits >= 8) { out.push(buffer & 255); buffer >>>= 8; bits -= 8; }
+          }
+          emit(256);
+          var prefix = indices[0];
+          for (var i = 1; i < indices.length; i++) {
+            var pair = prefix * 256 + indices[i], found = dictionary.get(pair);
+            if (found !== undefined) { prefix = found; continue; }
+            emit(prefix);
+            if (next < 4096) {
+              dictionary.set(pair, next++);
+              if (next > (1 << width) && width < 12) width++;
+            } else { emit(256); dictionary.clear(); width = 9; next = 258; }
+            prefix = indices[i];
+          }
+          emit(prefix); emit(257);
+          if (bits) out.push(buffer & 255);
+          var data = [8];
+          for (var i = 0; i < out.length; i += 255) {
+            data.push(Math.min(255, out.length - i));
+            for (var j = i; j < Math.min(i + 255, out.length); j++) data.push(out[j]);
+          }
+          data.push(0); return new Uint8Array(data);
+        }
+        var parts = ['GIF89a', new Uint8Array(word(canvas.width).concat(word(canvas.height), [247, 0, 0])), palette,
+          new Uint8Array([33, 255, 11]), 'NETSCAPE2.0', new Uint8Array([3, 1, 0, 0, 0])];
+        var count = Math.max(2, Math.round(duration * fps / 1000));
+        var indices = new Uint8Array(canvas.width * canvas.height);
+        for (var frame = 0; frame < count; frame++) {
+          paint(frame * duration / count / 1000);
+          var pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+          for (var i = 0; i < indices.length; i++) {
+            var p = i * 4;
+            indices[i] = transparent && pixels[p + 3] < 128 ? 0 : lookup[(pixels[p] >> 3) * 1024 + (pixels[p + 1] >> 3) * 32 + (pixels[p + 2] >> 3)];
+          }
+          var delay = Math.max(1, Math.round((frame + 1) * duration / count / 10) - Math.round(frame * duration / count / 10));
+          parts.push(new Uint8Array([33, 249, 4, 8 | (transparent ? 1 : 0)].concat(word(delay), [0, 0])));
+          parts.push(new Uint8Array([44, 0, 0, 0, 0].concat(word(canvas.width), word(canvas.height), [0])));
+          parts.push(lzw(indices));
+          // Yield between frames so the export page continues to respond.
+          await new Promise(function (resolve) { setTimeout(resolve, 0); });
+        }
+        parts.push(new Uint8Array([59]));
+        return new Blob(parts, { type: 'image/gif' });
+      }
+
+      // WebM alpha uses a second VP8 bitstream in BlockAdditional (ID 1).
+      // https://wiki.webmproject.org/alpha-channel
+      // Encode the alpha plane directly as I420 Y values: RGB-to-YUV conversion
+      // of a grayscale mask would restrict alpha to the video luma range.
+      async function encodeAlphaWebm(canvas, draw, duration, fps) {
+        var width = canvas.width, height = canvas.height;
+        var config = { codec: 'vp8', width: width, height: height, framerate: fps,
+          bitrate: 8000000, alpha: 'discard', hardwareAcceleration: 'prefer-software' };
+        var supported = await VideoEncoder.isConfigSupported(config);
+        if (!supported.supported || duration > 60000 || fps > 60) throw exportError('viewer.export.error.webmRequirements');
+        var failure = null;
+        var colors = [], alphas = [];
+        function encoder(output) {
+          return new VideoEncoder({ output: function (chunk) {
+            var bytes = new Uint8Array(chunk.byteLength);
+            chunk.copyTo(bytes);
+            output.push(bytes);
+          }, error: function (error) { failure = error; } });
+        }
+        var colorEncoder = encoder(colors), alphaEncoder = null;
+        var blocks = [];
+        function concat(parts) {
+          var size = parts.reduce(function (n, p) { return n + p.length; }, 0);
+          var bytes = new Uint8Array(size), offset = 0;
+          parts.forEach(function (p) { bytes.set(p, offset); offset += p.length; });
+          return bytes;
+        }
+        function uint(value) {
+          var bytes = [];
+          do { bytes.unshift(value % 256); value = Math.floor(value / 256); } while (value);
+          return new Uint8Array(bytes);
+        }
+        function element(id, payload) {
+          var length = payload.length, count = 1;
+          while (length >= Math.pow(2, count * 7) - 1) count++;
+          var size = new Uint8Array(count);
+          for (var i = count - 1; i >= 0; i--) { size[i] = length % 256; length = Math.floor(length / 256); }
+          size[0] |= 1 << (8 - count);
+          return concat([uint(id), size, payload]);
+        }
+        function number(id, value) { return element(id, uint(value)); }
+        function textElement(id, value) { return element(id, new TextEncoder().encode(value)); }
+        function group(id, children) { return element(id, concat(children)); }
+        try {
+          alphaEncoder = encoder(alphas);
+          colorEncoder.configure(config);
+          alphaEncoder.configure(config);
+          var frames = Math.ceil(duration * fps / 1000);
+          var ctx = canvas2dOrThrow(canvas, 'webm');
+          for (var index = 0; index < frames; index++) {
+            draw(index / fps);
+            var rgba = ctx.getImageData(0, 0, width, height).data;
+            var plane = new Uint8Array(width * height * 3 / 2);
+            plane.fill(128, width * height);
+            for (var pixel = 0; pixel < width * height; pixel++) {
+              plane[pixel] = rgba[pixel * 4 + 3];
+              rgba[pixel * 4 + 3] = 255;
+            }
+            var timestamp = Math.round(index * 1000000 / fps);
+            var colorFrame = new VideoFrame(rgba, { format: 'RGBA', codedWidth: width, codedHeight: height, timestamp: timestamp });
+            var alphaFrame = null;
+            try {
+              alphaFrame = new VideoFrame(plane, { format: 'I420', codedWidth: width, codedHeight: height, timestamp: timestamp });
+              colorEncoder.encode(colorFrame, { keyFrame: true });
+              alphaEncoder.encode(alphaFrame, { keyFrame: true });
+            } finally { colorFrame.close(); if (alphaFrame) alphaFrame.close(); }
+            await Promise.all([colorEncoder.flush(), alphaEncoder.flush()]);
+            if (failure) throw failure;
+            if (colors.length !== 1 || alphas.length !== 1) throw exportError('viewer.export.error.emptyWebm');
+            // Each cluster starts at a keyframe, avoiding signed block-time limits.
+            blocks.push(group(0x1F43B675, [number(0xE7, Math.round(index * 1000 / fps)),
+              group(0xA0, [element(0xA1, concat([new Uint8Array([0x81, 0, 0, 0]), colors.pop()])),
+                number(0x9B, Math.round(Math.min(1000 / fps, duration - index * 1000 / fps))),
+                group(0x75A1, [group(0xA6, [number(0xEE, 1), element(0xA5, alphas.pop())])])]) ]));
+          }
+        } finally {
+          if (colorEncoder.state !== 'closed') colorEncoder.close();
+          if (alphaEncoder && alphaEncoder.state !== 'closed') alphaEncoder.close();
+        }
+        var float = new Uint8Array(8);
+        new DataView(float.buffer).setFloat64(0, duration);
+        var info = group(0x1549A966, [number(0x2AD7B1, 1000000), element(0x4489, float),
+          textElement(0x4D80, 'Archify'), textElement(0x5741, 'Archify')]);
+        var tracks = group(0x1654AE6B, [group(0xAE, [number(0xD7, 1), number(0x73C5, 1), number(0x83, 1),
+          textElement(0x86, 'V_VP8'), number(0x23E383, Math.round(1000000000 / fps)),
+          group(0xE0, [number(0xB0, width), number(0xBA, height), number(0x53C0, 1)])])]);
+        var position = info.length + tracks.length;
+        var cues = blocks.map(function (block, i) {
+          var cue = group(0xBB, [number(0xB3, Math.round(i * 1000 / fps)),
+            group(0xB7, [number(0xF7, 1), number(0xF1, position)])]);
+          position += block.length;
+          return cue;
+        });
+        var header = group(0x1A45DFA3, [number(0x4286, 1), number(0x42F7, 1), number(0x42F2, 4), number(0x42F3, 8),
+          textElement(0x4282, 'webm'), number(0x4287, 4), number(0x4285, 2)]);
+        return new Blob([header, group(0x18538067, [info, tracks].concat(blocks, [group(0x1C53BB6B, cues)]))], { type: 'video/webm' });
+      }
+
       // Record the live CSS animation without Puppeteer, ffmpeg, or a network
       // dependency. SVG files loaded through Image are commonly rasterized as
       // one cached bitmap, so repeatedly drawing that Image does not reliably
       // advance its CSS animation. Keep one crisp static SVG background, then
       // render an explicit time-varying signal scene over the real authored
       // relationship geometry on every captured canvas frame.
-      function recordWebm(options) {
+      function recordMotion(options, format) {
         options = options || {};
-        if (!canRecordMotion()) {
-          return Promise.reject(exportError('viewer.export.error.webmRequirements'));
+        if (format === 'gif' ? !canEncodeGif() : options.transparentBackground ? !canEncodeAlphaWebm() : !canRecordMotion()) {
+          return Promise.reject(exportError(format === 'gif' ? 'viewer.export.error.gifRequirements' : 'viewer.export.error.webmRequirements'));
         }
         var duration = Math.max(250, Number(options.duration) || MOTION_DURATION);
-        var fps = Math.max(1, Number(options.fps) || MOTION_FPS);
+        var fps = Math.max(1, Number(options.fps) || (format === 'gif' ? 12 : MOTION_FPS));
+        if (format === 'gif') { duration = Math.min(30000, duration); fps = Math.min(50, fps); }
         var svg = document.querySelector('.diagram-container svg');
         var vb = svg.viewBox.baseVal;
-        var scale = Math.min(1, 1280 / vb.width);
-        var data = serializeSvg(scale);
+        var scale;
+        try { scale = exportScale(options, Math.min(1, 1280 / vb.width), vb.width, vb.height); }
+        catch (error) { return Promise.reject(error); }
+        var data = serializeSvg(scale, { transparentBackground: options.transparentBackground === true });
         var sourceUrl = URL.createObjectURL(new Blob([data.svgString], { type: 'image/svg+xml;charset=utf-8' }));
 
         function createMotionScene(root) {
@@ -6622,7 +6911,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             return Number.isFinite(value) ? value : fallback;
           }
 
-          var edges = Array.prototype.slice.call(root.querySelectorAll('[data-animate="edge"]')).map(function (element, index) {
+          var edges = Array.prototype.slice.call(root.querySelectorAll(format === 'gif' ? 'path[data-composition-points],path[data-edge-key],path[data-edge-id],path[data-animate="edge"]' : 'path[data-animate="edge"]')).map(function (element, index) {
             var computed = getComputedStyle(element);
             return {
               points: samplesFor(element),
@@ -6632,7 +6921,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             };
           }).filter(function (edge) { return edge.points.length > 1; });
 
-          var nodes = Array.prototype.slice.call(root.querySelectorAll('[data-node-id][data-animate="node"]')).map(function (element, index) {
+          var nodes = Array.prototype.slice.call(root.querySelectorAll(format === 'gif' ? '[data-node-id]' : '[data-node-id][data-animate="node"]')).map(function (element, index) {
             var box;
             try { box = element.getBBox(); } catch (_) { return null; }
             var painted = element.querySelector('[class*="c-"]') || element;
@@ -6735,85 +7024,102 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           ctx.restore();
         }
 
-        var motionScene = createMotionScene(svg);
-
         return new Promise(function (resolve, reject) {
+          var stream, recorder, raf = 0, timers = [], settled = false;
           var backgroundImage = new Image();
-          backgroundImage.onload = function () {
-            var canvas = document.createElement('canvas');
-            canvas.width = Math.max(2, Math.round(data.width / 2) * 2);
-            canvas.height = Math.max(2, Math.round(data.height / 2) * 2);
-            var ctx = canvas.getContext('2d');
-            var stream = canvas.captureStream(fps);
-            var mime = motionMimeType();
-            var recorder;
-            try {
-              recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6000000 });
-            } catch (err) {
-              URL.revokeObjectURL(sourceUrl);
-              stream.getTracks().forEach(function (track) { track.stop(); });
-              reject(err);
-              return;
+          function finish(error, blob) {
+            if (settled) return;
+            settled = true;
+            cancelAnimationFrame(raf);
+            timers.forEach(clearTimeout);
+            backgroundImage.onload = backgroundImage.onerror = null;
+            if (recorder) {
+              recorder.ondataavailable = recorder.onerror = recorder.onstop = null;
+              try { if (recorder.state !== 'inactive') recorder.stop(); } catch (_) {}
             }
-            var chunks = [];
-            var raf = 0;
-            var stopped = false;
-            var startedAt = performance.now();
-            function cleanup() {
-              if (stopped) return;
-              stopped = true;
-              cancelAnimationFrame(raf);
-              URL.revokeObjectURL(sourceUrl);
-              stream.getTracks().forEach(function (track) { track.stop(); });
-            }
-            function draw(now) {
-              var elapsed = Math.max(0, ((Number(now) || performance.now()) - startedAt) / 1000);
-              drawMotionFrame(ctx, backgroundImage, motionScene, elapsed);
-              raf = requestAnimationFrame(draw);
-            }
-            recorder.ondataavailable = function (event) {
-              if (event.data && event.data.size) chunks.push(event.data);
-            };
-            recorder.onerror = function (event) {
-              cleanup();
-              reject(event.error || exportError('viewer.export.error.mediaRecorder'));
-            };
-            recorder.onstop = function () {
-              cleanup();
-              var blob = new Blob(chunks, { type: recorder.mimeType || mime });
-              if (!blob.size) reject(exportError('viewer.export.error.emptyWebm'));
-              else resolve(blob);
-            };
-            drawMotionFrame(ctx, backgroundImage, motionScene, 0);
-            recorder.start(250);
-            startedAt = performance.now();
-            raf = requestAnimationFrame(draw);
-            setTimeout(function () {
-              if (recorder.state === 'inactive') return;
-              // Chromium normally emits the final chunk during stop(), but
-              // some embedded browser shells need an explicit encoder flush
-              // first. Keep the short grace window bounded and harmless for
-              // browsers that already delivered timeslice chunks.
-              try { recorder.requestData(); } catch (_) {}
-              setTimeout(function () {
-                if (recorder.state !== 'inactive') recorder.stop();
-              }, 120);
-            }, duration);
-          };
-          backgroundImage.onerror = function () {
+            if (stream) stream.getTracks().forEach(function (track) { try { track.stop(); } catch (_) {} });
             URL.revokeObjectURL(sourceUrl);
-            reject(exportError('viewer.export.error.webmBackground'));
+            if (error) reject(error); else resolve(blob);
+          }
+          function later(fn, delay) {
+            timers.push(setTimeout(function () {
+              if (settled) return;
+              try { fn(); } catch (error) { finish(error); }
+            }, delay));
+          }
+          backgroundImage.onload = function () {
+            try {
+              var motionScene = createMotionScene(svg);
+              var canvas = document.createElement('canvas');
+              canvas.width = Math.max(2, format === 'gif' ? Math.round(data.width) : Math.round(data.width / 2) * 2);
+              canvas.height = Math.max(2, format === 'gif' ? Math.round(data.height) : Math.round(data.height / 2) * 2);
+              var ctx = canvas.getContext('2d');
+              if (!ctx) throw exportError('viewer.export.error.mediaRecorder');
+              if (format === 'gif' || options.transparentBackground) {
+                var encoder = format === 'gif' ? encodeGif : encodeAlphaWebm;
+                encoder(canvas, function (seconds) {
+                  drawMotionFrame(ctx, backgroundImage, motionScene, seconds);
+                }, duration, fps, options.transparentBackground === true).then(function (blob) { finish(null, blob); }, finish);
+                return;
+              }
+              stream = canvas.captureStream(fps);
+              var mime = motionMimeType();
+              recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 6000000 });
+              var chunks = [], startedAt;
+              function draw(now) {
+                if (settled) return;
+                try {
+                  var elapsed = Math.max(0, ((Number(now) || performance.now()) - startedAt) / 1000);
+                  drawMotionFrame(ctx, backgroundImage, motionScene, elapsed);
+                  raf = requestAnimationFrame(draw);
+                } catch (error) { finish(error); }
+              }
+              recorder.ondataavailable = function (event) {
+                if (!settled && event.data && event.data.size) chunks.push(event.data);
+              };
+              recorder.onerror = function (event) { finish(event.error || exportError('viewer.export.error.mediaRecorder')); };
+              recorder.onstop = function () {
+                try {
+                  var blob = new Blob(chunks, { type: recorder.mimeType || mime });
+                  finish(blob.size ? null : exportError('viewer.export.error.emptyWebm'), blob);
+                } catch (error) { finish(error); }
+              };
+              drawMotionFrame(ctx, backgroundImage, motionScene, 0);
+              recorder.start(250);
+              if (settled) return;
+              startedAt = performance.now();
+              raf = requestAnimationFrame(draw);
+              later(function () {
+                if (recorder.state === 'inactive') {
+                  finish(exportError('viewer.export.error.emptyWebm')); return;
+                }
+                recorder.requestData();
+                later(function () { if (recorder.state !== 'inactive') recorder.stop(); }, 120);
+              }, duration);
+              // A shell that never emits stop/error must not leave the export pending.
+              later(function () { finish(exportError('viewer.export.error.mediaRecorder')); }, duration + 5000);
+            } catch (error) { finish(error); }
           };
-          backgroundImage.src = sourceUrl;
+          backgroundImage.onerror = function () { finish(exportError('viewer.export.error.webmBackground')); };
+          try { backgroundImage.src = sourceUrl; } catch (error) { finish(error); }
         });
       }
+
+      function recordWebm(options) { return recordMotion(options, 'webm'); }
+      function recordGif(options) { return recordMotion(options, 'gif'); }
 
       var menu = document.getElementById('export-menu');
       var btn = document.getElementById('btn-export');
       var routeShareItem = menu.querySelector('button[data-action="route-share-card"]');
       var reachShareItem = menu.querySelector('button[data-action="reach-share-card"]');
+      var backgroundItem = menu.querySelector('[data-action="transparent-background"]');
+      var scaleItem = document.getElementById('export-scale');
+      var gifFpsItem = document.getElementById('export-gif-fps');
+      function backgroundOptions() {
+        return { transparentBackground: backgroundItem.getAttribute('aria-checked') === 'true', scale: scaleItem.value };
+      }
       var items = function () {
-        return Array.prototype.slice.call(menu.querySelectorAll('button[role="menuitem"]'));
+        return Array.prototype.slice.call(menu.querySelectorAll('button[role^="menuitem"], select'));
       };
 
       function syncRouteShareItem() {
@@ -6847,6 +7153,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       function supports(format) {
         if (format === 'svg' || format === 'svg-light' || format === 'svg-dark' || format === 'png') return true;
         if (format === 'webm') return canRecordMotion();
+        if (format === 'gif') return canEncodeGif();
         var mime = format === 'jpeg' ? 'image/jpeg' : 'image/webp';
         try {
           var c = document.createElement('canvas');
@@ -6927,6 +7234,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       menu.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') { e.preventDefault(); close(true); return; }
         if (e.key === 'Tab')    { close(false); return; }
+        if (e.target === scaleItem || e.target === gifFpsItem) return;
 
         var available = items().filter(function (i) { return !i.hidden && !i.disabled; });
         var current = available.indexOf(document.activeElement);
@@ -6950,8 +7258,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         }
       });
 
-      function runExport(format) {
-        if (['svg', 'svg-light', 'svg-dark', 'png', 'jpeg', 'webp', 'webm'].indexOf(format) === -1) {
+      function runExport(format, options) {
+        if (format === 'gif') options = Object.assign({ fps: Number(gifFpsItem.value) }, options || {});
+        options = Object.assign(backgroundOptions(), options || {});
+        if (['svg', 'svg-light', 'svg-dark', 'png', 'jpeg', 'webp', 'webm', 'gif'].indexOf(format) === -1) {
           return Promise.reject(exportError('viewer.export.unsupported'));
         }
         var base = diagramFilename();
@@ -6961,20 +7271,21 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         close(true);
         clearExportReceipt();
         if (format === 'webm') toast(viewerText('viewer.export.recording'));
+        if (format === 'gif') toast(viewerText('viewer.export.encodingGif'));
         return (svgTheme
-          ? Promise.resolve(serializeSvg(1, { theme: svgTheme })).then(function (d) {
+          ? Promise.resolve(serializeSvg(1, { theme: svgTheme, transparentBackground: options.transparentBackground === true })).then(function (d) {
               var blob = new Blob([d.svgString], { type: 'image/svg+xml;charset=utf-8' });
               recordExportReceipt('svg', blob, d.canonicalStateClean);
               download(blob, base + (svgTheme === 'auto' ? '' : '-' + svgTheme) + '.svg');
             })
-          : format === 'webm'
-            ? recordWebm().then(function (blob) {
+          : format === 'webm' || format === 'gif'
+            ? (format === 'gif' ? recordGif(options) : recordWebm(options)).then(function (blob) {
                 document.documentElement.setAttribute('data-last-motion-bytes', String(blob.size));
-                recordExportReceipt('webm', blob, true);
-                download(blob, base + '.webm');
-                toast(viewerText('viewer.export.downloadedWebm'));
+                recordExportReceipt(format, blob, true);
+                download(blob, base + '.' + format);
+                toast(viewerText(format === 'gif' ? 'viewer.export.downloadedGif' : 'viewer.export.downloadedWebm'));
               })
-          : rasterize(format).then(function (blob) {
+          : rasterize(format, options).then(function (blob) {
               recordExportReceipt(format, blob, true);
               download(blob, base + '.' + format);
             })
@@ -6984,7 +7295,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           var message = exportMessage(err);
           document.documentElement.setAttribute('data-last-export-error-format', format);
           document.documentElement.setAttribute('data-last-export-error', technicalMessage);
-          if (format === 'webm') {
+          if (format === 'webm' && !err.archifyExportSize) {
             var motionItem = menu.querySelector('button[data-format="webm"]');
             if (motionItem) {
               motionItem.disabled = true;
@@ -7108,7 +7419,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           alert(viewerText('viewer.export.clipboardUnsupported.short'));
           return;
         }
-        var blobPromise = rasterize('png');
+        var blobPromise = rasterize('png', backgroundOptions());
         return writePngToClipboard(blobPromise).then(function () {
           toast(viewerText('viewer.export.copiedPng'));
         }).catch(function (err) {
@@ -7120,6 +7431,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
 
       menu.addEventListener('click', function (e) {
+        if (e.target.closest('[data-action="transparent-background"]')) {
+          backgroundItem.setAttribute('aria-checked', backgroundOptions().transparentBackground ? 'false' : 'true');
+          var webmItem = menu.querySelector('[data-format="webm"]');
+          webmItem.disabled = backgroundOptions().transparentBackground ? !canEncodeAlphaWebm() : !canRecordMotion();
+          webmItem.title = webmItem.disabled ? viewerText('viewer.export.motionUnavailable') : '';
+          return;
+        }
         var routeShareCardBtn = e.target.closest('button[data-action="route-share-card"]');
         if (routeShareCardBtn && !routeShareCardBtn.disabled && !routeShareCardBtn.hidden) { runRouteShareCard(); return; }
 
@@ -7133,7 +7451,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         if (formatBtn && !formatBtn.disabled) { runExport(formatBtn.dataset.format); }
       });
 
-      Archify.motion = { canRecord: canRecordMotion, recordWebm: recordWebm };
+      Archify.motion = { canRecord: canRecordMotion, recordWebm: recordWebm, canEncodeGif: canEncodeGif, recordGif: recordGif };
       Archify.exportMenu = {
         open: open,
         close: close,
@@ -7452,22 +7770,36 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           beacon.classList.add('source-evidence-beacon');
           beacon.setAttribute('data-source-evidence-beacon', '');
           beacon.setAttribute('aria-hidden', 'true');
-          var brandOffset = node.hasAttribute('data-node-brand') ? 24 : 0;
-          beacon.setAttribute('transform', 'translate(' + (box.x + box.width - 35 - brandOffset) + ' ' + (box.y + 5) + ')');
+          var brandOffset = node.hasAttribute('data-node-brand') ? 22 : 0;
           var title = document.createElementNS(svgNamespace, 'title');
           title.textContent = label;
           var plate = document.createElementNS(svgNamespace, 'rect');
-          plate.setAttribute('width', '30');
-          plate.setAttribute('height', '12');
-          plate.setAttribute('rx', '6');
+          plate.setAttribute('height', '13');
+          plate.setAttribute('rx', '6.5');
           var text = document.createElementNS(svgNamespace, 'text');
-          text.setAttribute('x', '15');
-          text.setAttribute('y', '8.25');
+          text.setAttribute('y', '9.4');
           text.textContent = viewerText('viewer.passport.sourceMarker') + ' ' + count;
           beacon.appendChild(title);
           beacon.appendChild(plate);
           beacon.appendChild(text);
           node.appendChild(beacon);
+
+          // Measure the real glyph advance, then clamp the plate between 24
+          // and 36px; a still-wider label is squeezed with textLength so the
+          // badge never overlaps the neighbouring brand mark or sigil.
+          var textWidth = 16;
+          try {
+            var measured = text.getComputedTextLength();
+            if (Number.isFinite(measured) && measured > 0) textWidth = measured;
+          } catch (_) {}
+          var plateWidth = Math.min(36, Math.max(24, textWidth + 8));
+          if (textWidth > plateWidth - 8) {
+            text.setAttribute('textLength', String(plateWidth - 8));
+            text.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+          }
+          plate.setAttribute('width', String(plateWidth));
+          text.setAttribute('x', String(plateWidth / 2));
+          beacon.setAttribute('transform', 'translate(' + (box.x + box.width - 6 - brandOffset - plateWidth) + ' ' + (box.y + 4.5) + ')');
 
           var originalLabel = node.getAttribute('aria-label') || '';
           node.setAttribute('data-source-evidence-count', String(count));
@@ -9438,24 +9770,34 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         var style = window.getComputedStyle(element);
         return element.getBoundingClientRect().height + number(style.marginTop) + number(style.marginBottom);
       }
+      // Smallest scale that keeps node text at the requested floor and
+      // context relationship labels readable. A declared wide reader holds
+      // relationship labels to the requested floor too; every other reader
+      // still keeps them at the 6px hard floor the browser gate enforces, so
+      // a first-screen fit can never push them below it.
       function minimumReadableScale() {
-        var sourceMinimum = null;
-        var selectors = [
-          'text[data-node-label], text[data-boundary-label], text[data-detail="context"]'
-        ];
-        if (measuredHeightFit && ratio >= WIDE_RATIO && Number.isFinite(declaredMinimumText)) {
-          selectors.push('g[data-detail="context"][data-edge-from][data-edge-to] > text');
-        }
-        Array.from(svg.querySelectorAll(selectors.join(', '))).forEach(function (text) {
-          if (text.getAttribute('data-detail') === 'context' && !text.closest('[data-node-id]')) return;
+        var nodeMinimum = null;
+        var edgeMinimum = null;
+        var selectors = 'text[data-node-label], text[data-boundary-label], text[data-detail="context"], g[data-detail="context"] text';
+        Array.from(svg.querySelectorAll(selectors)).forEach(function (text) {
+          if (text.getAttribute('data-detail') === 'fine' || text.closest('[data-detail="fine"]')) return;
           var sourceFontPx = parseFloat(text.getAttribute('font-size') || '');
-          if (Number.isFinite(sourceFontPx)) {
-            sourceMinimum = sourceMinimum == null ? sourceFontPx : Math.min(sourceMinimum, sourceFontPx);
+          if (!Number.isFinite(sourceFontPx)) return;
+          var primary = text.hasAttribute('data-node-label') || text.hasAttribute('data-boundary-label');
+          var context = text.getAttribute('data-detail') === 'context' || Boolean(text.closest('g[data-detail="context"]'));
+          if (!primary && context && text.closest('[data-edge-from][data-edge-to]')) {
+            edgeMinimum = edgeMinimum == null ? sourceFontPx : Math.min(edgeMinimum, sourceFontPx);
+          } else if (primary || text.closest('[data-node-id]')) {
+            nodeMinimum = nodeMinimum == null ? sourceFontPx : Math.min(nodeMinimum, sourceFontPx);
           }
         });
-        return sourceMinimum != null
-          ? Math.min(1, requestedMinimumText / sourceMinimum)
-          : 1;
+        var edgeTarget = measuredHeightFit && ratio >= WIDE_RATIO && Number.isFinite(declaredMinimumText)
+          ? requestedMinimumText
+          : MIN_PROJECTED_NODE_TEXT_PX;
+        var scale = 0;
+        if (nodeMinimum != null) scale = Math.max(scale, requestedMinimumText / nodeMinimum);
+        if (edgeMinimum != null) scale = Math.max(scale, edgeTarget / edgeMinimum);
+        return scale > 0 ? Math.min(1, scale) : 1;
       }
       var sourcePrimary = null;
       if (svg) Array.from(svg.querySelectorAll('text[data-node-label]')).forEach(function (text) {
@@ -9488,6 +9830,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       }
       function clear() {
         html.style.removeProperty('--archify-reader-width');
+        html.style.removeProperty('--archify-diagram-max-width');
+        html.removeAttribute('data-reader-narrow');
         html.removeAttribute('data-reader-layout');
         html.removeAttribute('data-reader-overflow');
         setRail(false);
@@ -9549,11 +9893,25 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             number(diagramStyle.borderTopWidth) + number(diagramStyle.borderBottomWidth)
         };
       }
+      // `width` is the diagram's reading width. The page shell never narrows
+      // below the desktop reader floor, so a narrow, tall diagram keeps a
+      // usable header, toolbar, and controls; its SVG is centred instead.
       function applyWidth(width, minWidth) {
         var rounded = Math.max(Math.ceil(minWidth || 0), Math.round(width));
         if (Math.abs(rounded - lastWidth) < 1) return false;
         lastWidth = rounded;
-        html.style.setProperty('--archify-reader-width', rounded + 'px');
+        var shellFloor = Math.min(MIN_READER_WIDTH, Math.max(0, window.innerWidth - chromeMetrics().bodyX));
+        html.style.setProperty('--archify-reader-width', Math.max(rounded, shellFloor) + 'px');
+        if (rounded < shellFloor) {
+          // `rounded` already includes a docked rail and its gap; the SVG cap
+          // is only the diagram's share, not the space beside it.
+          var railShare = html.getAttribute('data-reader-rail') === 'true' ? RAIL_WIDTH + RAIL_GAP : 0;
+          html.style.setProperty('--archify-diagram-max-width', Math.max(1, rounded - railShare - chromeMetrics().diagramX) + 'px');
+          html.setAttribute('data-reader-narrow', 'true');
+        } else {
+          html.style.removeProperty('--archify-diagram-max-width');
+          html.removeAttribute('data-reader-narrow');
+        }
         html.setAttribute('data-reader-layout', 'adaptive');
         return true;
       }
@@ -9618,10 +9976,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           if (collapsedPreference === '1' || (collapsedPreference !== '0' && !comfortable)) mode = 'collapsed';
           else mode = fitsReadable ? 'true' : 'overlay';
         }
-        // With notes below the fold, the diagram may trade the renderer's
-        // comfortable primary size down to the rail's 12px floor so it and its
-        // controls fit the first screen; taller graphs still scroll.
-        if (mode === 'bottom' && primaryWidth > 0) primaryWidth = labelWidth(Math.min(RAIL_COMFORT_PRIMARY_PX, declaredPrimaryText));
+        // With notes below the fold, the first screen belongs to the whole
+        // diagram and its controls: it may shrink past the comfortable primary
+        // size down to the renderer's readable text floor, and zoom restores
+        // detail. Only a graph taller than that floor allows still scrolls.
+        if (mode === 'bottom') primaryWidth = 0;
         if (primaryWidth > 0) minWidth = Math.max(minWidth, Math.min(maxWidth, primaryWidth + chrome.diagramX));
         var docked = mode === 'true';
         setRail(mode);

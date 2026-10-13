@@ -23,10 +23,16 @@ test('public staging excludes untracked files and rejects external symlinks and 
     assert.equal(fs.existsSync(path.join(output, 'new.svg')), true);
     assert.equal(fs.existsSync(path.join(output, 'index.html')), false);
     assert.equal(fs.existsSync(path.join(output, 'private-note.txt')), false);
-    fs.symlinkSync(path.join(root, 'docs/private-note.txt'), path.join(root, 'docs/link.txt'));
-    git('add', 'docs/link.txt');
+    // Windows directory junctions need no symlink privilege and exercise the
+    // same ancestor-link rejection in production staging.
+    const link = process.platform === 'win32' ? 'docs/link' : 'docs/link.txt';
+    if(process.platform === 'win32') {
+      write('outside/private-note.txt', 'external content');
+      fs.symlinkSync(path.join(root,'outside'),path.join(root,link),'junction');
+    } else fs.symlinkSync(path.join(root,'docs/private-note.txt'),path.join(root,link));
+    git('add', link);
     assert.throws(() => stagePublic(root, output), /symlink/);
-    git('rm', '--cached', 'docs/link.txt');
+    git('rm', '-r', '--cached', link);
     write('website/public/cases/demo.html', 'collision');
     git('add', 'website/public/cases/demo.html');
     assert.throws(() => stagePublic(root, output), /Duplicate public URL/);

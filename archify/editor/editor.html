@@ -180,6 +180,7 @@
     <button id="export">导出 JSON 草稿</button>
     <button id="export-image">导出图像 ↗</button>
     <button id="original">查看正式 Archify HTML ↗</button>
+    <button id="reload" type="button">重新加载候选文件</button>
     <button id="save" class="primary">保存并生成 HTML</button>
   </nav>
 </header>
@@ -272,6 +273,7 @@ import {
 } from './orthogonal-tools.mjs';
 import {planAutoLayout, applyAutoLayout} from './auto-layout.mjs';
 import {createDrawioAdapter} from './drawio-adapter.mjs';
+import {architectureNodeBox} from './shared/architecture-position.mjs';
 import {normalizeSceneGeometry} from './scene-normalize.mjs';
 import {componentTextGeometry,labelGeometry} from './shared/text-style.mjs';
 import {renderCards,arrowGeometry} from './shared/utils.mjs';
@@ -440,7 +442,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     svg.classList.toggle('linking',mode === 'link');
   }
   const findNode = (id) => spec.components.find(n=>n.id===id);
-  const findEdge = (id) => spec.connections.find((e,i)=>(e.id||'edge-'+i)===id);
+  const findEdge = (id) => (spec.connections||[]).find((e,i)=>(e.id||'edge-'+i)===id);
   function select(kind,id,additive=false) {
     if (selected?.kind !== kind || selected?.id !== id) selectedHandle = null;
     if (kind === 'node') {
@@ -456,11 +458,11 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     else status('选择模式：点击或拖动模块，右侧可修改属性。');
     draw();
   }
-  const boxOf = (n) => ({x:n.pos?.[0]||0,y:n.pos?.[1]||0,w:n.size?.[0]||160,h:n.size?.[1]||76});
+  const boxOf = n => architectureNodeBox(n,spec);
   const gridPos = n => $('snap-grid').checked ? Math.round(n / 24) * 24 : Math.round(n);
   function normalizeScene() {
-    normalizeSceneGeometry(spec, camera, spec.connections.filter(e=>e.labelAt&&e.label)
-      .map(e=>labelGeometry(e.label,e.font_sizes?.label??8,e.labelAt)));
+    normalizeSceneGeometry(spec, camera, (spec.connections||[]).filter(e=>e.labelAt&&e.label)
+      .map(e=>labelGeometry(e.label,e.font_sizes?.label??8,e.labelAt)),boxOf);
   }
   function alignSelection(kind) {
     const nodes=[...selectedNodes].map(findNode).filter(Boolean);
@@ -475,8 +477,8 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       const span=horizontal?right-left:bottom-top;
       const total=sorted.reduce((sum,n)=>sum+(horizontal?boxOf(n).w:boxOf(n).h),0);
       let cursor=horizontal?left:top;const spacing=(span-total)/(sorted.length-1);
-      for(const n of sorted){n.pos[horizontal?0:1]=Math.round(cursor);cursor+=(horizontal?boxOf(n).w:boxOf(n).h)+spacing;}
-    }else for(const n of nodes){const b=boxOf(n);
+      for(const n of sorted){n.pos=[boxOf(n).x,boxOf(n).y];n.pos[horizontal?0:1]=Math.round(cursor);cursor+=(horizontal?boxOf(n).w:boxOf(n).h)+spacing;}
+    }else for(const n of nodes){const b=boxOf(n);n.pos=[b.x,b.y];
       if(kind==='left')n.pos[0]=left;
       if(kind==='right')n.pos[0]=Math.round(right-b.w);
       if(kind==='hcenter')n.pos[0]=Math.round(midX-b.w/2);
@@ -610,7 +612,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     ctx.fillStyle=editorColor('#0d1c2e');ctx.fillRect(0,0,w,h);
     const projection=minimapProjection(spec.components,w,h);
     for(const node of spec.components) {
-      const b=projection.rect(nodeBox(node));
+      const b=projection.rect(boxOf(node));
       ctx.fillStyle=selectedNodes.has(node.id)?editorColor('#f9c66b'):editorColor('#5bafff');
       ctx.fillRect(b.x,b.y,Math.max(1,b.w),Math.max(1,b.h));
     }
@@ -618,7 +620,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       ctx.strokeStyle=editorColor('#70deaf');ctx.lineWidth=1;
       for(const node of spec.components) {
         const p=layoutPreview.plan.positions[node.id];
-        const b=projection.rect({x:p[0],y:p[1],w:nodeBox(node).w,h:nodeBox(node).h});
+        const b=projection.rect({x:p[0],y:p[1],w:boxOf(node).w,h:boxOf(node).h});
         ctx.strokeRect(b.x,b.y,Math.max(1,b.w),Math.max(1,b.h));
       }
     }
@@ -647,7 +649,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     cameraFitted=false;
     if (!camera) return;
     const oldW=camera.w,oldH=camera.h;
-    const scene=sceneBounds(spec?.components||[]);
+    const scene=sceneBounds((spec?.components||[]).map(n=>({...n,pos:[boxOf(n).x,boxOf(n).y]})));
     camera.w=Math.max(250,Math.min(Math.max(6500,scene.w*1.5),camera.w*factor));
     camera.h=oldH*camera.w/oldW;
     camera.x+=(oldW-camera.w)/2;camera.y+=(oldH-camera.h)/2;
@@ -698,7 +700,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
           error.retryable = response.status === 429;
           throw error;
         }
-        if (result.edges.length !== spec.connections.length) throw new Error('连线路由数不一致');
+        if (result.edges.length !== (spec.connections||[]).length) throw new Error('连线路由数不一致');
         renderedRoutes = new Map(result.edges.map(edge=>[edge.key,edge]));
         renderedLineScale=spec.meta.line_scale??1;
         officialScene = result.sceneSvg ? new DOMParser().parseFromString(result.sceneSvg,'text/html').querySelector('svg') : null;
@@ -733,7 +735,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
   // Only a matching successful Archify render may be used to seed edge edits.
   function officialRouteFor(edge) {
     if (!edge || routeSignature !== routeKey() || !(renderedRoutes instanceof Map)) return null;
-    const route = renderedRoutes.get(spec.connections.indexOf(edge));
+    const route = renderedRoutes.get((spec.connections||[]).indexOf(edge));
     return route?.from === edge.from && route?.to === edge.to ? route : null;
   }
   function setManualPoints(edge, points, normalize = true) {
@@ -837,7 +839,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     lastDrawSignature=signature;
     const accurate=signature===routeSignature && renderedRoutes instanceof Map;
     if (!accurate && !viewOnly) scheduleRoutePreview();
-    if (renderedRoutes instanceof Map) for(const [index,e] of spec.connections.entries()) {
+    if (renderedRoutes instanceof Map) for(const [index,e] of (spec.connections||[]).entries()) {
       const route=renderedRoutes.get(index);
       // Fail closed if Archify returns an incomplete or mismatched route.
       if(!route || route.from!==e.from || route.to!==e.to) continue;
@@ -897,7 +899,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       }
     }
     for(const n of spec.components) {
-      const geometry=componentTextGeometry(n);
+      const resolved=boxOf(n),geometry=componentTextGeometry({...n,pos:[resolved.x,resolved.y]});
       if(routeSignature===routeKey()&&officialScene){
         const node=officialNodes.get(n.id);
         for(const key of ['label','sublabel','tag']){
@@ -935,7 +937,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     }
     // Endpoint handles must be above nodes; otherwise the node hit area hides them.
     if(selected?.kind==='edge' && lod==='detail' && (accurate || drag?.kind==='side')) {
-      const e=findEdge(selected.id),idx=spec.connections.indexOf(e);
+      const e=findEdge(selected.id),idx=(spec.connections||[]).indexOf(e);
       const route=renderedRoutes?.get(idx);
       if(route && route.from===e?.from && route.to===e?.to && route.points?.length>=2) {
         const overlay=svgEl('g',{'data-edge-endpoints':selected.id},svg);
@@ -965,7 +967,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     // Editing controls remain clickable even when a label overlaps a node or endpoint.
     for (const handle of svg.querySelectorAll('[data-bend],[data-segment],[data-label-handle]')) svg.append(handle);
     text($('viewport-count'),bigMode
-      ? `视口 ${visibleNodeCount}/${spec.components.length} 模块 · ${visibleEdgeCount}/${spec.connections.length} 连线 · ${lod}`
+      ? `视口 ${visibleNodeCount}/${spec.components.length} 模块 · ${visibleEdgeCount}/${(spec.connections||[]).length} 连线 · ${lod}`
       : `${spec.components.length} 个模块`);
     paintMinimap();
     updateButtons();
@@ -1014,7 +1016,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
   }
   function fontProperty(name,owner,key,fallback) {
     const category=spec.components.includes(owner)?'node-'+key
-      :spec.connections.includes(owner)?'edge-label'
+      :(spec.connections||[]).includes(owner)?'edge-label'
       :(spec.boundaries||[]).includes(owner)?'boundary-label'
       :(spec.cards||[]).includes(owner)?'card-title':null;
     fontControl(name,owner.font_sizes?.[key],fallback,v=>{
@@ -1131,7 +1133,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
         for(const key of ['label','sublabel','tag']){const el=old?.querySelector(key==='label'?'[data-node-label]':'[data-text-field="'+key+'"]');if(el)sizes[key]=Number(el.getAttribute('font-size'));}
         n.font_sizes={...Object.fromEntries(Object.entries(sizes).map(([k,v])=>[k,half(v)])),...n.font_sizes};
       }
-      for(const e of spec.connections)if(e.label)e.font_sizes={label:half(8*factor),...e.font_sizes};
+      for(const e of (spec.connections||[]))if(e.label)e.font_sizes={label:half(8*factor),...e.font_sizes};
       const oldBoundaries=[...(scene?.querySelectorAll('[data-graph-role="structural-frame-label"]')||[])];
       for(const [index,b] of (spec.boundaries||[]).entries())b.font_sizes={label:half(Number(oldBoundaries[index]?.getAttribute('font-size'))||9*factor),...b.font_sizes};
     }
@@ -1169,10 +1171,10 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
         property('模块标签',n.tag||'',v=>n.tag=v,'text');
         fontProperty('模块标签字号',n,'tag',componentTextGeometry(n).sizes.tag);
         property('模块类型',n.type,v=>n.type=v,'select');
-        property('位置 X',boxOf(n).x,v=>n.pos[0]=v,'number');
-        property('位置 Y',boxOf(n).y,v=>n.pos[1]=v,'number');
-        property('宽度',boxOf(n).w,v=>{n.size=n.size||[160,76];n.size[0]=Math.max(60,v);},'number');
-        property('高度',boxOf(n).h,v=>{n.size=n.size||[160,76];n.size[1]=Math.max(44,v);},'number');
+        property('位置 X',boxOf(n).x,v=>n.pos=[v,boxOf(n).y],'number');
+        property('位置 Y',boxOf(n).y,v=>n.pos=[boxOf(n).x,v],'number');
+        property('宽度',boxOf(n).w,v=>{n.size=n.size||[120,60];n.size[0]=Math.max(60,v);},'number');
+        property('高度',boxOf(n).h,v=>{n.size=n.size||[120,60];n.size[1]=Math.max(44,v);},'number');
       }
     }
     if(selected?.kind==='edge') {
@@ -1353,10 +1355,10 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     checkpoint();
     if(selected.kind==='node') {
       spec.components=spec.components.filter(n=>n.id!==selected.id);
-      spec.connections=spec.connections.filter(e=>e.from!==selected.id&&e.to!==selected.id);
+      spec.connections=(spec.connections||[]).filter(e=>e.from!==selected.id&&e.to!==selected.id);
       spec.boundaries=(spec.boundaries||[]).map(b=>({...b,wraps:b.wraps.filter(id=>id!==selected.id)})).filter(b=>b.wraps.length);
     } else if(selected.kind==='edge') {
-      spec.connections=spec.connections.filter((e,i)=>(e.id||'edge-'+i)!==selected.id);
+      spec.connections=(spec.connections||[]).filter((e,i)=>(e.id||'edge-'+i)!==selected.id);
     } else if(selected.kind==='card') spec.cards.splice(selected.id,1);
     selected=null;selectedHandle=null;selectedNodes.clear();draw();renderInspector();
   }
@@ -1402,7 +1404,7 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     if(bend || segment || side || labelHandle) {
       event.preventDefault();
       const id=edge.dataset.edgeId,e=findEdge(id);
-      const prior=renderedRoutes?.get(spec.connections.indexOf(e));
+      const prior=renderedRoutes?.get((spec.connections||[]).indexOf(e));
       const route=officialRouteFor(e)||(labelHandle&&prior?.from===e.from&&prior?.to===e.to?prior:null);
       if(!route || !isOrthogonalPath(route.points)) {
         status('等待有效的 Archify 官方正交路线后再编辑把手。','error');return;
@@ -1439,8 +1441,8 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       if(mode==='link') {
         if(!linkStart){linkStart=id;status('已选择源节点 '+id+'，请点击目标节点。');draw();return;}
         if(linkStart!==id) {
-          checkpoint();const eid=newId('link',spec.connections);
-          spec.connections.push({id:eid,from:linkStart,to:id,label:'新连接'});
+          checkpoint();const eid=newId('link',spec.connections||[]);
+          (spec.connections??=[]).push({id:eid,from:linkStart,to:id,label:'新连接'});
           mode='select';linkStart=null;select('edge',eid);markDirty();
         } else {linkStart=null;status('已取消连接。');draw();}
         return;
@@ -1448,8 +1450,8 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       select('node',id,event.ctrlKey||event.metaKey);
       if(event.ctrlKey||event.metaKey)return;
       const p=point(event);const n=findNode(id);
-      drag={kind:'node',id,offsetX:p.x-n.pos[0],offsetY:p.y-n.pos[1],
-        original:clone(spec),initial:[...n.pos],moved:false,
+      drag={kind:'node',id,offsetX:p.x-boxOf(n).x,offsetY:p.y-boxOf(n).y,
+        original:clone(spec),initial:[boxOf(n).x,boxOf(n).y],moved:false,
         group:[...selectedNodes].map(i=>({id:i,pos:[...findNode(i).pos]}))};
       svg.setPointerCapture(event.pointerId);svg.classList.add('grabbing');
     } else if(edge) select('edge',edge.dataset.edgeId);
@@ -1502,7 +1504,8 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       const p=point(event),n=findNode(drag.id);
       if(!n)return;
       const x=gridPos(p.x-drag.offsetX),y=gridPos(p.y-drag.offsetY);
-      if(x!==n.pos[0]||y!==n.pos[1]){
+      if(x!==boxOf(n).x||y!==boxOf(n).y){
+        n.pos=[x,y];
         const dx=x-drag.initial[0],dy=y-drag.initial[1];
         for(const item of drag.group){const target=findNode(item.id);if(target)target.pos=[item.pos[0]+dx,item.pos[1]+dy];}
         drag.moved=true;draw();
@@ -1726,7 +1729,8 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
     if(e.key==='Escape'&&mode==='link')setMode('select');
   });
   window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
-  (async()=>{
+  async function load(){
+    if(saving||layoutPreview)return;
     try {
       const response=await fetch(new URL('api/spec',location.href));
       if(!response.ok)throw new Error('无法读取 candidate.json');
@@ -1738,9 +1742,10 @@ import {LARGE_GRAPH_THRESHOLD,nodeBox,sceneBounds,intersectsViewport,routeBox,
       text($('path'),result.input);
       if(matchMedia('(max-width:920px)').matches){document.body.classList.add('inspector-hidden');$('inspector-toggle').setAttribute('aria-expanded','false');text($('inspector-toggle'),'显示属性');}
       frame(true);refreshSearch();draw();renderInspector();
-      status('已加载：'+spec.components.length+' 个模块、'+spec.connections.length+' 条连接。修改不会自动写盘。','ok');
+      status('已加载：'+spec.components.length+' 个模块、'+(spec.connections||[]).length+' 条连接。修改不会自动写盘。','ok');
     } catch(error){status('加载失败：'+error.message,'error');}
-  })();
+  }
+  $('reload').onclick=load;load();
 })();
 </script>
 </body>

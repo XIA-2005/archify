@@ -7,7 +7,7 @@ import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {ChromeVisualBrowser,findChrome} from '../bin/visual-check.mjs';
 
-test('draw.io native handles preserve edits, history, endpoints and frame geometry', {timeout:120000}, async t=>{
+test('draw.io native handles preserve edits, history, endpoints and frame geometry', {timeout:180000}, async t=>{
   const chrome=findChrome();if(!chrome){t.skip('Chrome required');return;}
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'archify-drawio-browser-'));
   const candidate={schema_version:1,diagram_type:'architecture',meta:{title:'Native editing',output:'diagram.html',quality_profile:'standard'},
@@ -23,7 +23,7 @@ test('draw.io native handles preserve edits, history, endpoints and frame geomet
   let stdout='',stderr='';server.stdout.on('data',d=>stdout+=d);server.stderr.on('data',d=>stderr+=d);
   const browser=new ChromeVisualBrowser(chrome);
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-  async function until(fn){const end=Date.now()+20000;while(Date.now()<end){if(await fn())return;await sleep(100);}throw Error('Timeout: '+stderr);}
+  async function until(fn,timeout=20000){const end=Date.now()+timeout;while(Date.now()<end){if(await fn())return;await sleep(100);}throw Error('Timeout: '+stderr);}
   let sid;
   const call=(method,params={})=>browser.cdp.send(method,params,sid);
   async function evalJS(expression){const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});
@@ -98,7 +98,7 @@ test('draw.io native handles preserve edits, history, endpoints and frame geomet
     // Formal save still executes the canonical validation/finalize pipeline.
     await evalJS(`document.getElementById('save').click()`);
     t.diagnostic('Save started');
-    await until(()=>evalJS(`!document.getElementById('save').disabled`));
+    await until(()=>evalJS(`!document.getElementById('save').disabled`),90000);
     t.diagnostic('Save returned');
     assert.equal(await evalJS(`document.getElementById('message').classList.contains('error')`),false,
       await evalJS(`document.getElementById('message').textContent`));

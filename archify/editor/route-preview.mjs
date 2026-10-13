@@ -95,7 +95,7 @@ export async function renderArchifyRoutes({ candidate, cli, cwd, repoRoot = cwd,
     const html = await fs.promises.readFile(output, 'utf8');
     const start = html.indexOf('<svg ', html.indexOf('<!-- Main Diagram -->'));
     const end = html.indexOf('</svg>', start) + 6;
-    return { edges: extractArchifyRoutes(html, candidate.connections.length), sceneSvg: html.slice(start, end) };
+    return { edges: extractArchifyRoutes(html, (candidate.connections||[]).length), sceneSvg: html.slice(start, end) };
   } finally {
     await fs.promises.rm(directory, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
   }

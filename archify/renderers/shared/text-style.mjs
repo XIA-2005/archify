@@ -1,3 +1,4 @@
+import {DEFAULT_COMPONENT_SIZE} from './architecture-position.mjs';
 import { fittedNodeFontSize } from './text-fit.mjs';
 import { textUnits } from './utils.mjs';
 
@@ -7,7 +8,7 @@ export function textSize(owner, key, fallback) {
 
 export function componentTextGeometry(node, scale = 1) {
   const [x, y] = node.pos || [0, 0];
-  const [w, h] = node.size || [120, 60];
+  const [w, h] = node.size || DEFAULT_COMPONENT_SIZE;
   const explicit = node.font_sizes || {};
   const sizes = {
     label: explicit.label ?? fittedNodeFontSize(node.label, w, 11 * scale, 8 * scale),

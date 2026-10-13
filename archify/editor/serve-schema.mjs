@@ -125,8 +125,10 @@ const server = http.createServer((req,res)=>{
   if(req.method==='GET'&&(route===base || route===base+'/'))
     return answer(res,200,page,'text/html; charset=utf-8');
   if(req.method==='GET'&&route===base+'/api/spec'){
-    const bytes=fs.readFileSync(input);
-    return answer(res,200,{candidate:JSON.parse(bytes),expectedHash:digest(bytes),target:output});
+    try {const bytes=fs.readFileSync(input),candidate=JSON.parse(bytes);
+      if(!sameMeta(candidate))return answer(res,422,{ok:false,message:'Candidate structure or protected metadata changed'});
+      return answer(res,200,{candidate,expectedHash:digest(bytes),target:output});}
+    catch(error){return answer(res,error.code==='ENOENT'?404:error instanceof SyntaxError?422:500,{ok:false,message:error.message});}
   }
   if(req.method==='GET'&&route===base+'/preview'&&previewHTML)
     { res.setHeader('Content-Security-Policy','sandbox allow-scripts');

@@ -5,7 +5,9 @@
 >
 > 本分支增加带 draw.io 原生线条与框架操作的本地可视化编辑器、连线文字编辑、批量字号及悬停高亮、编辑器浅色模式、低频设置折叠，以及可选透明背景、PPT 用循环 GIF（可选 12/24/30/50 帧/秒）和 1×/3×/5×/7×/10× 导出倍率。
 >
-> **[查看与原版的功能对比、使用方法和限制](archify/README.md)。** 定制 Skill 源码位于 `archify/`；`dev` 是集成与试用分支，`main` 是稳定分支。源码仓库不再提交 `archify.zip`；需要时使用 `scripts/build-zip.sh` 生成，发布流程会将 ZIP 作为 GitHub Release 附件提供。下方保留原版介绍和官方入口，供参考。
+> 删除连线或分组后保留剩余数据；Schema 编辑器保留未应用 JSON 草稿，须先应用或丢弃才能继续表单编辑、预览和保存。支持既有网格输入及省略连线数组，默认节点尺寸与正式渲染器一致。候选文件恢复后可重新加载；GIF 包含无 ID 连线动画，WebM 录制异常明确失败并释放资源。
+>
+> **[查看与原版的功能对比、使用方法和限制](archify/README.md)。** 定制 Skill 位于 `feat/export-and-editor-usability` 分支的 `archify/`。默认 `main`、官方安装来源与现有 `archify.zip` 不包含本版全部增强功能。下方保留原版介绍和官方入口，供参考。
 
 ---
 
@@ -18,8 +20,6 @@
 <h3 align="center">把你想理解、规划或分享的事，变成可以互动的可视化作品。</h3>
 
 <p align="center"><img src="docs/assets/archify-readme-hero.png" alt="Archify — interactive diagrams" width="960" /></p>
-
-<p align="center"><strong>官方入口：</strong> <a href="https://archify.si">archify.si</a> · <a href="https://github.com/tt-a1i/archify">GitHub</a><br/>Archify 开源免费。第三方提供的在线服务、收费套餐由其运营方负责，不代表 Archify 官方。 <a href="#official-services">查看详细说明 →</a></p>
 
 <p align="center">从一个想法、一个问题或一份计划开始。把它描述给 AI Agent，Archify 就能生成可以探索、修改和分享的交互式 HTML。从旅行行程、知识地图到复杂系统，你都可以继续扩展，做成自己需要的样子。</p>
 
@@ -105,10 +105,6 @@ API 优先读取 Redis，缓存未命中时查询 PostgreSQL 并回填缓存。
 <tr>
 <td align="center" width="240"><a href="https://www.openlux.ai/register?channel=c_qdvanbpc"><img src="docs/assets/sponsors/openlux-logo.png" alt="OpenLux" width="200" /></a><br/><strong><a href="https://www.openlux.ai/register?channel=c_qdvanbpc">OpenLux</a></strong></td>
 <td>感谢 OpenLux 对本项目的赞助！OpenLux 是一个面向企业的一站式 AI 聚合平台，汇集全球各大厂商主流大模型，平台提供高效、稳定的服务与及时的技术支持。Claude、OpenAI、Gemini 系列模型基准折扣分别低至官方的 0.882 折、0.4 折和 0.8 折。<br/><br/>Archify 用户还可享受专属福利：通过专属链接注册，充值最高可享 7.5% 优惠！<br/><br/><a href="https://www.openlux.ai/register?channel=c_qdvanbpc">立即体验 →</a></td>
-</tr>
-<tr>
-<td align="center" width="240"><a href="https://zturbo.top"><img src="docs/assets/sponsors/zturbo-logo.png" alt="ZTURBO" width="200" /></a><br/><strong><a href="https://zturbo.top">ZTURBO</a></strong></td>
-<td>为开发者和 AI 用户提供高速、稳定的连接体验。<br/>新用户注册即可免费体验，首次充值还有专属加赠；支持 Windows、macOS、iOS 和 Android 多端使用，长期套餐折算每天不到 ¥1。<br/><br/>免费体验 · 首充加赠 · 多端畅连<br/><br/><a href="https://zturbo.top">立即体验 ZTURBO →</a></td>
 </tr>
 <tr><td align="center" width="240"><a href="https://github.com/EverMind-AI/Raven"><img src="docs/assets/sponsors/evermind-archify-raven.png" alt="Archify × Raven" width="200" /></a><br/><strong><a href="https://github.com/EverMind-AI">EverMind</a> · <a href="https://github.com/EverMind-AI/Raven">Raven</a></strong></td><td>感谢 EverMind 赞助 Archify。EverMind 专注 Agent 记忆基础设施，旗下 <a href="https://github.com/EverMind-AI/Raven"><strong>Raven</strong></a> 已支持 Archify Skill，让 Raven 工作流可以直接生成经过验证的交互式系统地图。</td></tr>
 </table>
@@ -433,14 +429,6 @@ node bin/archify.mjs deliver workflow examples/agent-tool-call.workflow.json /tm
 </tr>
 </table>
 
-<a id="official-services"></a>
-
-## 官方入口与第三方服务
-
-- **开源项目：** 源码和安装包可按 [MIT 协议](LICENSE)免费使用。
-- **官方网站：** [archify.si](https://archify.si) 目前提供项目介绍、示例和安装指引。
-- **第三方服务：** 是否收费、如何处理数据、提供什么支持，由第三方运营方决定。名称或域名相似不代表官方合作。
-
 ## License
 
 [MIT](LICENSE) —— 可以自由使用、修改和分发。
@@ -480,3 +468,4 @@ node bin/archify.mjs deliver workflow examples/agent-tool-call.workflow.json /tm
 ## Star History
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/tt-a1i/archify/star-history/assets/star-history-dark.svg" /><img alt="Star History" src="https://raw.githubusercontent.com/tt-a1i/archify/star-history/assets/star-history-light.svg" /></picture></p>
+

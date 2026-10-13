@@ -4,7 +4,7 @@ export const LARGE_GRAPH_THRESHOLD = 100;
 
 export function nodeBox(node) {
   return {x:node.pos?.[0] ?? 0,y:node.pos?.[1] ?? 0,
-    w:node.size?.[0] ?? 160,h:node.size?.[1] ?? 76};
+    w:node.size?.[0] ?? 120,h:node.size?.[1] ?? 60};
 }
 
 export function sceneBounds(nodes) {

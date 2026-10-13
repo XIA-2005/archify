@@ -9,6 +9,7 @@ const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 // Shared by PR CI and tag releases. WebM decoding stays in test:webm.
 const testFiles = [
   'drawio-editor-browser.test.mjs',
+  'editor-state-browser.test.mjs',
   'drawio-font-editing-browser.test.mjs',
   'finalize-browser.test.mjs',
   'desktop-reader-browser.test.mjs',

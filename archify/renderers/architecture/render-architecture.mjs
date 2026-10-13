@@ -1,3 +1,4 @@
+import {DEFAULT_COMPONENT_SIZE} from '../shared/architecture-position.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { esc, renderDefinitions, renderSemanticSigil, textUnits } from '../shared/utils.mjs';
@@ -68,8 +69,8 @@ const styledGeometry = arch.meta?.font_scale !== undefined
   || asArray(arch.connections).some(conn => conn.font_sizes?.label !== undefined);
 
 const layout = {
-  defaultW: 120,
-  defaultH: 60,
+  defaultW: DEFAULT_COMPONENT_SIZE[0],
+  defaultH: DEFAULT_COMPONENT_SIZE[1],
   margin: 40,
   // Boundary padding — the 30/50 rule that was a hand-arithmetic footgun
   // (CHANGELOG v2.2.1): 30px on top/left/right, plus 20px extra at the bottom.

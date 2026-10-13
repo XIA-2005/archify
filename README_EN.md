@@ -5,7 +5,9 @@
 >
 > This branch adds a local visual editor with native draw.io line and frame editing, editable connection labels, batch font controls with hover highlighting, editor light/dark themes, collapsible settings, selectable transparent exports, looping GIF for presentations with selectable 12/24/30/50 fps, and selectable 1×/3×/5×/7×/10× export scales. It keeps the upstream renderer and validation workflow.
 >
-> **[Read the feature comparison and usage guide (中文)](archify/README.md).** The customized Skill source is in `archify/`; `dev` is the integration and trial-use branch, and `main` is stable. The source repository does not track `archify.zip`. Generate it when needed with `scripts/build-zip.sh`; release workflows build and attach it to GitHub Releases. The upstream introduction below is retained for attribution and reference.
+> Editor fixes preserve anonymous connections and frames after deletion, retain unapplied Schema JSON drafts, accept existing grid inputs and omitted connections, and recover after candidate-file read errors. GIF includes anonymous edge motion; WebM recording failures reject and release resources.
+>
+> **[Read the feature comparison and usage guide (中文)](archify/README.md).** This customized Skill is in `archify/` on `feat/export-and-editor-usability`. The default `main`, official install source and existing `archify.zip` do not contain all of these enhancements. The upstream introduction below is retained for attribution and reference.
 
 ---
 
@@ -18,8 +20,6 @@
 <h3 align="center">Turn anything you want to understand, plan, or share into an interactive visual.</h3>
 
 <p align="center"><img src="docs/assets/archify-readme-hero.png" alt="Archify — interactive diagrams" width="960" /></p>
-
-<p align="center"><strong>Official channels：</strong> <a href="https://archify.si">archify.si</a> · <a href="https://github.com/tt-a1i/archify">GitHub</a><br/>Archify is free and open source. Third-party online services and paid plans are operated by their respective providers and do not represent Archify. <a href="#official-services">Service details →</a></p>
 
 <p align="center">Start with an idea, a question, or a plan. Describe it to your AI agent, and Archify turns it into an interactive HTML you can explore, customize, and share. From travel itineraries and learning maps to complex systems—make it your own.</p>
 
@@ -105,10 +105,6 @@ Then continue: “Add authentication”, “Highlight the cache-miss path”, or
 <tr>
 <td align="center" width="240"><a href="https://www.openlux.ai/register?channel=c_qdvanbpc"><img src="docs/assets/sponsors/openlux-logo.png" alt="OpenLux" width="200" /></a><br/><strong><a href="https://www.openlux.ai/register?channel=c_qdvanbpc">OpenLux</a></strong></td>
 <td>Thank you to OpenLux for sponsoring this project! OpenLux is an all-in-one AI platform for businesses, bringing together leading AI models from major providers worldwide. With fast, reliable service and responsive technical support, OpenLux offers base pricing for Claude, OpenAI, and Gemini models as low as 8.82%, 4%, and 8% of official rates, respectively.<br/><br/>Exclusive offer for Archify users: Sign up through our referral link and enjoy up to 7.5% off credit top-ups!<br/><br/><a href="https://www.openlux.ai/register?channel=c_qdvanbpc">Get started with OpenLux →</a></td>
-</tr>
-<tr>
-<td align="center" width="240"><a href="https://zturbo.top"><img src="docs/assets/sponsors/zturbo-logo.png" alt="ZTURBO" width="200" /></a><br/><strong><a href="https://zturbo.top">ZTURBO</a></strong></td>
-<td>Fast, stable connectivity for developers and AI users.<br/>New users can try the service for free and receive an exclusive bonus on their first top-up. Supports Windows, macOS, iOS, and Android; long-term plans work out to less than ¥1 per day.<br/><br/>Free trial · First top-up bonus · Multi-device connectivity<br/><br/><a href="https://zturbo.top">Try ZTURBO →</a></td>
 </tr>
 <tr><td align="center" width="240"><a href="https://github.com/EverMind-AI/Raven"><img src="docs/assets/sponsors/evermind-archify-raven.png" alt="Archify × Raven" width="200" /></a><br/><strong><a href="https://github.com/EverMind-AI">EverMind</a> · <a href="https://github.com/EverMind-AI/Raven">Raven</a></strong></td><td>EverMind sponsors Archify and builds memory infrastructure for agents. Its <a href="https://github.com/EverMind-AI/Raven"><strong>Raven</strong></a> harness supports Archify as a Skill for verified, interactive system maps.</td></tr>
 </table>
@@ -429,14 +425,6 @@ Connect with other users and developers, share ideas, request features, report b
 </tr>
 </table>
 
-<a id="official-services"></a>
-
-## Official channels and third-party services
-
-- **Open-source project:** The source code and installation packages are free to use under the [MIT License](LICENSE).
-- **Official website:** [archify.si](https://archify.si) currently provides project information, examples, and installation guidance.
-- **Third-party services:** Pricing, data handling, and support are determined by the respective provider. A similar name or domain does not establish an official affiliation.
-
 ## License
 
 [MIT](LICENSE) — free to use, modify, and distribute.
@@ -474,3 +462,4 @@ Using Archify, sharing it, reporting bugs, and contributing improvements are als
 ## Star History
 
 <p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/tt-a1i/archify/star-history/assets/star-history-dark.svg" /><img alt="Star History" src="https://raw.githubusercontent.com/tt-a1i/archify/star-history/assets/star-history-light.svg" /></picture></p>
+

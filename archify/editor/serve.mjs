@@ -113,7 +113,7 @@ async function readJSON(req) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 function validCandidateMetadata(next) {
-  return next && Array.isArray(next.components) && Array.isArray(next.connections)
+  return next && Array.isArray(next.components) && (next.connections===undefined||Array.isArray(next.connections))
     && next.diagram_type === 'architecture' && next.schema_version === 1
     && next.meta?.output === originalMeta.output
     && JSON.stringify(next.meta?.repository) === JSON.stringify(originalMeta.repository);
@@ -224,7 +224,7 @@ const server = http.createServer((req, res) => {
     return respond(res,200,fs.readFileSync(path.join(editorDir,'batch-fonts.mjs')),'text/javascript; charset=utf-8');
   }
   const sharedModule=route?.slice((base+'/shared/').length);
-  if(req.method==='GET'&&route?.startsWith(base+'/shared/')&&['text-style.mjs','text-fit.mjs','utils.mjs','i18n.mjs'].includes(sharedModule)) {
+  if(req.method==='GET'&&route?.startsWith(base+'/shared/')&&['text-style.mjs','text-fit.mjs','utils.mjs','i18n.mjs','architecture-position.mjs'].includes(sharedModule)) {
     return respond(res,200,fs.readFileSync(path.join(editorDir,'../renderers/shared',sharedModule)),'text/javascript; charset=utf-8');
   }
   if (req.method === 'GET' && route === base + '/auto-layout.mjs') {
@@ -236,9 +236,15 @@ const server = http.createServer((req, res) => {
       'text/javascript; charset=utf-8');
   }
   if (req.method === 'GET' && route === base + '/api/spec') {
-    const raw = fs.readFileSync(input);
-    return json(res, 200, { candidate: JSON.parse(raw), expectedHash: hash(raw),
-      target: output, input });
+    try {
+      const raw = fs.readFileSync(input);
+      const candidate=JSON.parse(raw);
+      if(!validCandidateMetadata(candidate))return json(res,422,{ok:false,message:'候选文件结构或受保护元数据不合法'});
+      return json(res, 200, { candidate, expectedHash: hash(raw), target: output, input });
+    } catch(error) {
+      return json(res, error.code==='ENOENT'?404:error instanceof SyntaxError?422:500,
+        {ok:false,message:error.message});
+    }
   }
   if (req.method === 'GET' && route === base + '/original') {
     if (!fs.existsSync(output)) return respond(res, 404, 'Original HTML not found', 'text/plain');

@@ -190,7 +190,7 @@ test('every README header links to the other languages', () => {
 test('all README languages show the brand mark and localized launch video', () => {
   for (const language of readmeLanguages) {
     const filename = language.file;
-    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8');
+    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8').replace(/\r\n?/g, '\n');
     const markIndex = readme.indexOf('docs/assets/archify-lockup-light.svg');
     const heroPath = 'docs/assets/archify-readme-hero.png';
     const heroIndex = readme.indexOf(heroPath);
@@ -219,7 +219,7 @@ test('all README languages show the brand mark and localized launch video', () =
 
 test('README installation tables contain a complete DeepSeek Harness row', () => {
   for (const { file: filename } of readmeLanguages) {
-    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8');
+    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8').replace(/\r\n?/g, '\n');
     const row = readme.split('\n').find((line) => line.startsWith('| **DeepSeek Harness** |'));
     assert.ok(row, `${filename}: DeepSeek Harness must be an installation table row`);
     assert.equal(
@@ -240,7 +240,7 @@ test('README installation tables contain a complete DeepSeek Harness row', () =>
 
 test('README installation tables include Hermes Agent before DeepSeek Harness', () => {
   for (const { file: filename } of readmeLanguages) {
-    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8');
+    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8').replace(/\r\n?/g, '\n');
     const hermes = readme.split('\n').find((line) => line.startsWith('| **Hermes Agent** |'));
     const dsh = readme.split('\n').find((line) => line.startsWith('| **DeepSeek Harness** |'));
     assert.ok(hermes, `${filename}: Hermes Agent must be an installation table row`);
@@ -285,7 +285,7 @@ test('README demos use checked-in captures and live deep links below the existin
 
   for (const language of readmeLanguages) {
     const filename = language.file;
-    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8');
+    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8').replace(/\r\n?/g, '\n');
     const markIndex = readme.indexOf('docs/assets/archify-lockup-light.svg');
     const proofIndex = readme.indexOf('<!-- archify-launch-video -->');
     const previewIndex = sectionIndex(readme, filename, language.preview);
@@ -320,7 +320,7 @@ test('README preserves the visual proof set and key content', () => {
   ];
 
   for (const { file: filename, noRepository } of readmeLanguages) {
-    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8');
+    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8').replace(/\r\n?/g, '\n');
     const supercode = readme.indexOf('https://supercode.sh/?utm_source=archify');
     const evermind = readme.indexOf('docs/assets/sponsors/evermind-archify-raven.png');
     assert.ok(supercode >= 0 && evermind > supercode, `${filename}: EverMind must follow Supercode`);
@@ -339,7 +339,7 @@ test('all README languages end with the self-hosted star history chart', () => {
 
   for (const language of readmeLanguages) {
     const filename = language.file;
-    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8');
+    const readme = fs.readFileSync(path.join(repoRoot, filename), 'utf8').replace(/\r\n?/g, '\n');
     const starHistoryIndex = readme.lastIndexOf('## Star History');
     const contributingIndex = sectionIndex(readme, filename, language.contributing);
     assert.ok(starHistoryIndex > contributingIndex, `${filename}: Star History must follow Contributing`);

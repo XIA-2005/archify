@@ -1,7 +1,7 @@
 // Deterministic, dependency-free layered placement for Architecture v1 nodes.
 // This module only proposes node coordinates; Archify remains the sole edge router.
-const primarySize = (node, direction) => node.size?.[direction === 'LR' ? 0 : 1] ?? (direction === 'LR' ? 160 : 76);
-const crossSize = (node, direction) => node.size?.[direction === 'LR' ? 1 : 0] ?? (direction === 'LR' ? 76 : 160);
+const primarySize = (node, direction) => node.size?.[direction === 'LR' ? 0 : 1] ?? (direction === 'LR' ? 120 : 60);
+const crossSize = (node, direction) => node.size?.[direction === 'LR' ? 1 : 0] ?? (direction === 'LR' ? 60 : 120);
 
 export function planAutoLayout(candidate, options = {}) {
   const {direction = 'LR', layerGap = 110, nodeGap = 56, componentGap = 120, margin = 80} = options;
@@ -14,7 +14,7 @@ export function planAutoLayout(candidate, options = {}) {
       throw new Error(`${name}必须在 ${min}–${max} 之间`);
     }
   }
-  if (!Array.isArray(candidate?.components) || !Array.isArray(candidate?.connections)) {
+  if (!Array.isArray(candidate?.components) || (candidate?.connections!==undefined&&!Array.isArray(candidate.connections))) {
     throw new Error('缺少 Architecture 组件或连接列表');
   }
   const nodes = candidate.components;
@@ -33,7 +33,7 @@ export function planAutoLayout(candidate, options = {}) {
 
   const out = nodes.map(() => new Set()), incoming = nodes.map(() => new Set());
   let skippedEdges = 0;
-  for (const edge of candidate.connections) {
+  for (const edge of (candidate.connections||[])) {
     const a = byId.get(edge.from), b = byId.get(edge.to);
     if (a === undefined || b === undefined) {skippedEdges++; continue;}
     out[a].add(b);
@@ -181,7 +181,7 @@ export function planAutoLayout(candidate, options = {}) {
       nodes: nodes.length, groups: weakGroups.length, layers: layerCount,
       boundaryGroups: maximal.length,
       cycles: scc.filter(members => members.length > 1 || out[members[0]]?.has(members[0])).length,
-      manualRoutes: candidate.connections.filter(e => e.via?.length || e.labelAt || e.fromSide
+      manualRoutes: (candidate.connections||[]).filter(e => e.via?.length || e.labelAt || e.fromSide
         || e.toSide || (e.route && e.route !== 'auto')).length,
       skippedEdges,
     },
@@ -195,8 +195,8 @@ export function applyAutoLayout(candidate, plan) {
     node.pos = [...plan.positions[node.id]];
   }
   if (result.components.length) {
-    const maxX = Math.max(...result.components.map(n => n.pos[0] + (n.size?.[0] ?? 160)));
-    const maxY = Math.max(...result.components.map(n => n.pos[1] + (n.size?.[1] ?? 76)));
+    const maxX = Math.max(...result.components.map(n => n.pos[0] + (n.size?.[0] ?? 120)));
+    const maxY = Math.max(...result.components.map(n => n.pos[1] + (n.size?.[1] ?? 60)));
     const old = result.meta.viewBox || [1743, 958];
     if (maxX > old[0] - 12 || maxY > old[1] - 12) {
       result.meta.viewBox = [Math.max(old[0], Math.ceil(maxX + 24)),

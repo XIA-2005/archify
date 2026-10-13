@@ -1,3 +1,4 @@
+import {architectureNodeBox} from './shared/architecture-position.mjs';
 import {componentTextGeometry} from './shared/text-style.mjs';
 // Data bridge only. Pointer, keyboard, handles, guides and context menus run in
 // the unmodified draw.io EditorUi/Graph vendored from the user's desktop build.
@@ -11,7 +12,7 @@ export function createDrawioAdapter(frame, callbacks) {
   const geometryKey=spec=>JSON.stringify({...spec,
     components:spec.components.map(({label,sublabel,tag,...node})=>node),
     boundaries:(spec.boundaries||[]).map(({label,...boundary})=>boundary),
-    connections:spec.connections.map(({label,...edge})=>edge)},
+    connections:(spec.connections||[]).map(({label,...edge})=>edge)},
     (key,value)=>['font_sizes','font_size','labelColor'].includes(key)?undefined:value);
   function absolute(cell) {
     const g=cell.geometry;let x=g.x,y=g.y,p=cell.parent;
@@ -46,6 +47,9 @@ export function createDrawioAdapter(frame, callbacks) {
   function changed() {
     if(suppress||!imported)return;
     const {graph,ui}=api,model=graph.model,next=copy(imported);
+    // Bind authored objects to cells before filtering changes their array indices.
+    const edgeCells=new Map((next.connections||[]).map((e,i)=>[e,edges.get(e.id||'edge-'+i)]));
+    const boundaryCells=new Map((next.boundaries||[]).map((b,i)=>[b,boundaries.get(i)]));
     for(const c of Object.values(model.cells)){
       if(!c.vertex||c.archifyKind==='boundary'||c.archifyDecoration||[...nodes.values()].includes(c))continue;
       const original=next.components.find(n=>n.id===c.archifyId);
@@ -69,7 +73,7 @@ export function createDrawioAdapter(frame, callbacks) {
       }
     }
     next.boundaries=(next.boundaries||[]).flatMap((b,i)=>{
-      const c=boundaries.get(i);if(!model.contains(c))return [];
+      const c=boundaryCells.get(b);if(!model.contains(c))return [];
       const previous=JSON.parse(baseline.get(c)),box=absolute(c);
       if(JSON.stringify(box)!==JSON.stringify(previous.box))b.bounds=box;
       if(cellLabel(c)!==previous.label)b.label=cellLabel(c);
@@ -79,18 +83,18 @@ export function createDrawioAdapter(frame, callbacks) {
       return b.wraps.length?[b]:[];
     });
     if(!Object.hasOwn(imported,'boundaries')&&!next.boundaries.length)delete next.boundaries;
-    next.connections=next.connections.filter((e,i)=>model.contains(edges.get(e.id||'edge-'+i)))
+    next.connections=(next.connections||[]).filter(e=>model.contains(edgeCells.get(e)))
       .filter(e=>next.components.some(n=>n.id===e.from)&&next.components.some(n=>n.id===e.to));
     // Newly drawn connections are native draw.io cells. Existing component
     // metadata, source citations and IDs stay in the Archify model.
     for(const c of Object.values(model.cells)){
       if(!c.edge||[...edges.values()].includes(c))continue;
       if(!c.source?.archifyId||!c.target?.archifyId)continue;
-      const id='connection-'+crypto.randomUUID();c.archifyId=id;edges.set(id,c);
-      next.connections.push({id,from:c.source.archifyId,to:c.target.archifyId,label:cellLabel(c)});
+      const id='connection-'+crypto.randomUUID();c.archifyKind='edge';c.archifyId=id;edges.set(id,c);
+      const edge={id,from:c.source.archifyId,to:c.target.archifyId,label:cellLabel(c)};next.connections.push(edge);edgeCells.set(edge,c);
     }
     for(const [i,e]of next.connections.entries()){
-      const c=edges.get(e.id||'edge-'+i);if(!c)continue;
+      const c=edgeCells.get(e);if(!c)continue;
       const previous=baseline.has(c)?JSON.parse(baseline.get(c)):null;
       const now=edgeState(c);if(previous&&JSON.stringify(now)===JSON.stringify(previous))continue;
       const state=graph.view.getState(c);
@@ -127,7 +131,17 @@ export function createDrawioAdapter(frame, callbacks) {
         delete e.labelDx;delete e.labelDy;delete e.labelSegment;
       }
     }
+    if(!Object.hasOwn(imported,'connections')&&!next.connections.length)delete next.connections;
     if(JSON.stringify(next)===JSON.stringify(imported))return;
+    // Keep native routes intact while reindexing surviving cells.
+    nodes.forEach((c,id)=>{if(!model.contains(c))nodes.delete(id);});
+    edges.clear();boundaries.clear();
+    for(const [i,e]of (next.connections||[]).entries()){
+      const c=edgeCells.get(e),id=e.id||'edge-'+i;c.archifyId=id;edges.set(id,c);
+    }
+    for(const [i,b]of (next.boundaries||[]).entries()){
+      const c=boundaryCells.get(b);c.archifyId=i;boundaries.set(i,c);
+    }
     imported=copy(next);signature=JSON.stringify(next);seeded=true;capture();
     ui.editor.setModified(false); // The parent owns persistence and unload warnings.
     callbacks.change(next);
@@ -160,7 +174,7 @@ export function createDrawioAdapter(frame, callbacks) {
         const c=boundaries.get(i);model.setValue(c,b.label);
         graph.setCellStyles('fontSize',b.font_sizes?.label??9,[c]);
       }
-      for(const [i,e]of spec.connections.entries()){
+      for(const [i,e]of (spec.connections||[]).entries()){
         const c=edges.get(e.id||'edge-'+i);
         model.setValue(c,e.label||'');
         graph.setCellStyles('fontSize',e.font_sizes?.label??8,[c]);
@@ -188,13 +202,13 @@ export function createDrawioAdapter(frame, callbacks) {
       const parent=graph.getDefaultParent();
       for(const [i,b]of (spec.boundaries||[]).entries()){
         const rect=scene?.querySelector('[data-composition-frame-id="'+i+'"]');
-        const members=b.wraps.map(id=>spec.components.find(n=>n.id===id)).filter(Boolean);
+        const members=b.wraps.map(id=>spec.components.find(n=>n.id===id)).filter(Boolean).map(n=>architectureNodeBox(n,spec));
         if(!members.length)continue;
         const pad=b.pad??30;
-        const x=Math.min(...members.map(n=>n.pos[0]))-pad,
-          y=Math.min(...members.map(n=>n.pos[1]))-pad;
-        const fallback=[x,y,Math.max(...members.map(n=>n.pos[0]+(n.size?.[0]||160)))+pad-x,
-          Math.max(...members.map(n=>n.pos[1]+(n.size?.[1]||76)))+pad-y];
+        const x=Math.min(...members.map(n=>n.x))-pad,
+          y=Math.min(...members.map(n=>n.y))-pad;
+        const fallback=[x,y,Math.max(...members.map(n=>n.x+n.w))+pad-x,
+          Math.max(...members.map(n=>n.y+n.h))+pad-y];
         const box=b.bounds||(rect?['x','y','width','height'].map(k=>Number(rect.getAttribute(k))):fallback);
         const cell=graph.insertVertex(parent,'boundary-'+i,b.label,...box,style({
           rounded:1,arcSize:10,fillColor:'none',strokeColor:'#647c98',dashed:1,
@@ -205,7 +219,7 @@ export function createDrawioAdapter(frame, callbacks) {
         if(b.labelOffset){const geometry=cell.geometry.clone();geometry.offset=new w.mxPoint(...b.labelOffset);model.setGeometry(cell,geometry);}
       }
       for(const n of spec.components){
-        const box=[...n.pos,...(n.size||[160,76])];
+        const {x,y,w:width,h}=architectureNodeBox(n,spec),box=[x,y,width,h];
         // The innermost containing frame owns movement. Overlapping semantic
         // wraps remain in JSON; they are not silently changed by import.
         const owner=[...boundaries].filter(([i,c])=>(spec.boundaries[i].wraps||[]).includes(n.id))
@@ -219,7 +233,7 @@ export function createDrawioAdapter(frame, callbacks) {
         c.archifyKind='node';c.archifyId=n.id;nodes.set(n.id,c);
         updateNodeText(n,c);
       }
-      for(const [i,e]of spec.connections.entries()){
+      for(const [i,e]of (spec.connections||[]).entries()){
         const r=routes?.get(i),id=e.id||'edge-'+i;
         const entries={edgeStyle:e.route==='straight'?'none':'orthogonalEdgeStyle',rounded:1,
           html:0,endArrow:'block',endFill:1,strokeColor:e.variant==='emphasis'?'#087e61':'#2679bd',
@@ -242,7 +256,7 @@ export function createDrawioAdapter(frame, callbacks) {
     graph.view.validate();
     // Position edge labels in the same diagram coordinates as the official SVG.
     suppress=true;model.beginUpdate();
-    try{for(const [i,e]of spec.connections.entries()){
+    try{for(const [i,e]of (spec.connections||[]).entries()){
       const c=edges.get(e.id||'edge-'+i),s=graph.view.getState(c),r=routes?.get(i);
       const at=e.labelAt||(r?.labelBox?[r.labelBox.x+r.labelBox.width/2,r.labelBox.y+r.labelBox.height/2]:null);
       if(s&&at){const g=c.geometry.clone();g.offset=new w.mxPoint(at[0]-s.absoluteOffset.x/graph.view.scale+graph.view.translate.x,
@@ -283,7 +297,7 @@ export function createDrawioAdapter(frame, callbacks) {
     unsupportedIssues(){
       if(!api||!imported)return [];
       const g=api.graph,issues=[];
-      for(const [i,e]of imported.connections.entries()){
+      for(const [i,e]of (imported.connections||[]).entries()){
         const c=edges.get(e.id||'edge-'+i);if(!c)continue;const s=g.getCellStyle(c);
         if(s.curved==1)issues.push('曲线');
         if(s.endArrow!=='block'||s.startArrow&&s.startArrow!=='none')issues.push('自定义箭头');

@@ -396,13 +396,14 @@ function currentResult(availableVersion = '2.15.0', {
   };
 }
 
-function snooze(testFixture, eventKey, nowMs = baseTime) {
+function snooze(testFixture, eventKey, nowMs = baseTime, extra = {}) {
   return setUpdatePreference({
     releasePath: testFixture.releasePath,
     cacheDirectory: testFixture.cacheDirectory,
     eventKey,
     mode: 'snooze',
     now: () => nowMs,
+    ...extra,
   });
 }
 
@@ -2253,7 +2254,7 @@ test('a lower generation stalled after reservation cannot commit behind a newer 
   const pause = pauseMkdirOnce(operationPath(testFixture, 'pending', 2n));
   t.after(() => pause.restore());
 
-  const preference = snooze(testFixture, offered.eventKey);
+  const preference = snooze(testFixture, offered.eventKey, baseTime, {monotonicNow: () => 0});
   await pause.reached;
   assert.equal(fs.existsSync(operationPath(testFixture, 'reserved', 2n)), true);
   assert.equal((await checkForUpdate(options(testFixture, async () => response(secondRelease), {
@@ -2323,7 +2324,8 @@ for (const pausePoint of ['pending owner creation', 'state temp creation']) {
     });
     t.after(() => pause.restore());
 
-    const preference = snooze(testFixture, offered.eventKey);
+    // Fencing is under test here; the separate deadline tests keep a real clock.
+    const preference = snooze(testFixture, offered.eventKey, baseTime, {monotonicNow: () => 0});
     await pause.reached;
     const staleTime = new Date(Date.now() - 60_000);
     fs.utimesSync(

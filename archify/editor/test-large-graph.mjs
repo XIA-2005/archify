@@ -8,7 +8,7 @@ test('scene extents include node sizes and negative positions',()=>{
   const nodes=[{id:'a',pos:[-200,50],size:[120,80]},
     {id:'b',pos:[600,400],size:[200,100]}];
   assert.deepEqual(sceneBounds(nodes),{x:-200,y:50,w:1000,h:450});
-  assert.deepEqual(nodeBox({id:'c',pos:[10,20]}),{x:10,y:20,w:160,h:76});
+  assert.deepEqual(nodeBox({id:'c',pos:[10,20]}),{x:10,y:20,w:120,h:60});
   assert.deepEqual(sceneBounds([]),{x:0,y:0,w:1200,h:700});
 });
 

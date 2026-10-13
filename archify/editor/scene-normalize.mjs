@@ -1,7 +1,7 @@
-export function normalizeSceneGeometry(spec, camera, labelRects = []) {
+export function normalizeSceneGeometry(spec, camera, labelRects = [], boxOf = n => ({ x: n.pos[0], y: n.pos[1], w: n.size?.[0] || 120, h: n.size?.[1] || 60 })) {
   if (!spec.components?.length) return { dx: 0, dy: 0 };
-  const boxes = spec.components.map(n => ({ x: n.pos[0], y: n.pos[1], w: n.size?.[0] || 120, h: n.size?.[1] || 60 }));
-  const points = spec.connections.flatMap(e => [...(e.via || []), ...(e.labelAt ? [e.labelAt] : [])]);
+  const boxes = spec.components.map(boxOf);
+  const points = (spec.connections||[]).flatMap(e => [...(e.via || []), ...(e.labelAt ? [e.labelAt] : [])]);
   const frames = (spec.boundaries || []).flatMap(b => {
     const members = b.wraps.map(id => boxes[spec.components.findIndex(n => n.id === id)]).filter(Boolean);
     const pad = b.pad ?? 30;
@@ -15,8 +15,8 @@ export function normalizeSceneGeometry(spec, camera, labelRects = []) {
   const minY = Math.min(...boxes.map(n => n.y), ...frames.map(n => n.y), ...points.map(p => p[1]), ...labelRects.map(r => r.y));
   const dx = minX < 0 ? Math.ceil(16 - minX) : 0, dy = minY < 0 ? Math.ceil(16 - minY) : 0;
   if (dx || dy) {
-    for (const n of spec.components) { n.pos[0] += dx; n.pos[1] += dy; }
-    for (const e of spec.connections) {
+    for (const n of spec.components) { const b=boxOf(n); n.pos=[b.x+dx,b.y+dy]; }
+    for (const e of (spec.connections||[])) {
       for (const p of e.via || []) { p[0] += dx; p[1] += dy; }
       if (e.labelAt) { e.labelAt[0] += dx; e.labelAt[1] += dy; }
     }

@@ -19,25 +19,34 @@ input[readonly]{background:#f0f3f8;color:#6b7a88}textarea{min-height:220px;font-
 #status{font-size:12px;color:#52657b;padding:10px 12px;border-top:1px solid #e1e7ef;min-height:40px;white-space:pre-wrap}
 .warn{color:#a3421c!important}.ok{color:#0b845b!important}@media(max-width:840px){main{display:block;height:auto}aside{height:55vh;margin-bottom:12px}.preview{height:75vh}}
 </style></head>
-<body><header><div><h1>Archify · 跨类型可编辑页面</h1><div class="small" id="title">加载候选文件…</div></div><div class="topline"><button id="download">导出 JSON 草稿</button><button id="preview" class="primary">使用正式渲染器预览</button><button id="save">验证并保存</button></div></header>
+<body><header><div><h1>Archify · 跨类型可编辑页面</h1><div class="small" id="title">加载候选文件…</div></div><div class="topline"><button id="reload">重新加载</button><button id="download">导出 JSON 草稿</button><button id="preview" class="primary">使用正式渲染器预览</button><button id="save">验证并保存</button></div></header>
 <main><aside><div class="head"><strong>内容与结构编辑</strong><p>支持工作流、时序、数据流与状态图。可编辑节点、箭头字段或完整 JSON；当前版本不支持画布拖拽。预览使用官方渲染器，保存使用正式验证链，和独立 HTML 解耦。</p></div>
 <div class="tabs"><button class="active" data-mode="form">结构属性</button><button data-mode="json">完整 JSON</button></div>
 <section id="forms" class="scroll"><div class="toolbar" id="kinds"></div><div class="list" id="items"></div><div class="fields" id="fields"></div></section>
-<section id="raw" class="scroll" hidden><label>JSON 源文件（修改后点击“应用 JSON”）<textarea id="jsonbox" spellcheck="false"></textarea></label><div class="toolbar"><button id="apply">应用 JSON</button><button id="format">格式化</button></div></section>
+<section id="raw" class="scroll" hidden><div class="toolbar"><button id="apply">应用 JSON</button><button id="format">格式化</button><button id="discard">丢弃草稿</button></div><label>JSON 源文件（修改后点击“应用 JSON”）<textarea id="jsonbox" spellcheck="false"></textarea></label></section>
 <div id="status">内容未保存。请先查看右侧正式渲染预览，再保存。</div></aside>
 <section class="preview"><div class="previewhead"><h2>独立渲染预览 <span class="small">（非已交付 HTML；仅保存成功才更新正式文件）</span></h2><button id="original">查看上次正式 HTML</button></div><iframe id="frame" sandbox="allow-scripts allow-downloads" title="Archify 正式渲染器预览"></iframe></section></main>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),base=location.pathname.replace(/\/$/,'');
 const post=async(endpoint,payload)=>{const r=await fetch(base+endpoint,{method:'POST',headers:{'content-type':'application/json','x-archify-editor':'1'},body:JSON.stringify(payload)});return {status:r.status,...await r.json()}};
-let spec=null,expectedHash=null,activeArray='',activeIndex=0;
+let spec=null,expectedHash=null,activeArray='',activeIndex=0,rawDirty=false;
 const collections={workflow:['nodes','edges','lanes','phases','groups'],sequence:['participants','messages','groups'],dataflow:['nodes','edges','sources','sinks','groups'],lifecycle:['states','transitions','lanes','groups']};
 const has=key=>Array.isArray(spec?.[key]);
 const keys=()=>[...(collections[spec?.diagram_type]||[]),...Object.keys(spec||{})].filter((x,i,a)=>has(x)&&a.indexOf(x)===i);
 const status=(s,bad=false)=>{ $('status').textContent=s;$('status').className=bad?'warn':'ok';};
-function syncRaw(){ $('jsonbox').value=JSON.stringify(spec,null,2); }
+function updateDraftControls(){
+  for(const id of ['preview','save','reload'])$(id).disabled=rawDirty||!spec;
+  document.querySelectorAll('#forms input,#forms textarea').forEach(input=>input.disabled=rawDirty);
+  $('discard').disabled=!rawDirty;
+}
+function syncRaw(){if(!rawDirty)$('jsonbox').value=JSON.stringify(spec,null,2);updateDraftControls();}
+$('jsonbox').oninput=()=>{rawDirty=$('jsonbox').value!==JSON.stringify(spec,null,2);updateDraftControls();if(rawDirty)status('JSON 草稿尚未应用；请先应用或丢弃，再编辑表单、预览或保存。',true)};
+$('discard').onclick=()=>{rawDirty=false;syncRaw();status('已丢弃未应用草稿。')};
+window.addEventListener('beforeunload',event=>{if(rawDirty){event.preventDefault();event.returnValue=''}});
+const requireApplied=()=>{if(!rawDirty)return true;status('请先应用或丢弃 JSON 草稿。',true);return false};
 function renderKinds(){const host=$('kinds');host.replaceChildren();for(const name of keys()){let b=document.createElement('button');b.textContent=name+' ('+spec[name].length+')';b.className=name===activeArray?'active':'';b.onclick=()=>{activeArray=name;activeIndex=0;renderKinds();renderList()};host.append(b)}}
-function renderList(){const list=$('items');list.replaceChildren();const arr=spec[activeArray]||[];arr.forEach((item,i)=>{let b=document.createElement('button');b.className='item '+(i===activeIndex?'active':'');b.textContent=(i+1)+'. '+(item.label||item.title||item.id||item.name||item.from+' → '+item.to||'元素');b.onclick=()=>{activeIndex=i;renderList()};list.append(b)});renderFields();}
+function renderList(){const list=$('items');list.replaceChildren();const arr=spec[activeArray]||[];arr.forEach((item,i)=>{let b=document.createElement('button');b.className='item '+(i===activeIndex?'active':'');b.textContent=(i+1)+'. '+(item.label||item.title||item.id||item.name||item.from+' → '+item.to||'元素');b.onclick=()=>{activeIndex=i;renderList()};list.append(b)});renderFields();updateDraftControls();}
 function renderFields(){const holder=$('fields');holder.replaceChildren();const obj=spec[activeArray]?.[activeIndex];if(!obj)return;
   for(const [key,value] of Object.entries(obj)){
     if(value!==null&&['string','number','boolean'].includes(typeof value)){
@@ -49,12 +58,12 @@ function renderFields(){const holder=$('fields');holder.replaceChildren();const 
   }
 }
 function rerender(){if(!has(activeArray))activeArray=keys()[0];renderKinds();renderList();syncRaw();$('title').textContent=spec.meta?.title+' · '+spec.diagram_type+' v'+spec.schema_version;}
-async function load(){try{const r=await fetch(base+'/api/spec');const body=await r.json();spec=body.candidate;expectedHash=body.expectedHash;activeArray=keys()[0];rerender();status('已加载候选文件；尚未修改。');}catch(e){status('加载失败: '+e.message,true)}}
+async function load(){if(!requireApplied())return;try{const r=await fetch(base+'/api/spec');const body=await r.json();if(!r.ok)throw Error(body.message||'候选文件读取失败');spec=body.candidate;expectedHash=body.expectedHash;activeArray=keys()[0];rerender();status('已加载候选文件；尚未修改。');}catch(e){status('加载失败: '+e.message,true)}}
 document.querySelectorAll('[data-mode]').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===btn));const raw=btn.dataset.mode==='json';$('raw').hidden=!raw;$('forms').hidden=raw;if(raw)syncRaw();});
-$('apply').onclick=()=>{try{const next=JSON.parse($('jsonbox').value);if(next.diagram_type!==spec.diagram_type||next.schema_version!==spec.schema_version||next.meta?.output!==spec.meta.output||JSON.stringify(next.meta?.repository)!==JSON.stringify(spec.meta.repository))throw Error('不允许更改图类型、版本、输出路径和仓库');spec=next;rerender();status('已应用 JSON 修改，未保存。');}catch(e){status('JSON 不合法：'+e.message,true)}};
-$('format').onclick=()=>{try{$('jsonbox').value=JSON.stringify(JSON.parse($('jsonbox').value),null,2)}catch(e){status(e.message,true)}};
-$('preview').onclick=async()=>{try{$('preview').disabled=true;status('正在使用 Archify 正式渲染器创建预览…');const r=await post('/api/preview',{candidate:spec});if(!r.ok)throw Error(r.message);$('frame').src=base+'/preview?at='+Date.now();status('预览完成；当前图尚未通过完整交付验证。');}catch(e){status('预览失败：'+e.message,true)}finally{$('preview').disabled=false}};
-$('save').onclick=async()=>{try{$('save').disabled=true;status('正在验证与交付正式 HTML…');const r=await post('/api/save',{candidate:spec,expectedHash});if(!r.ok){if(r.expectedHash)expectedHash=r.expectedHash;throw Error(r.message)}expectedHash=r.expectedHash;status('保存成功：'+r.message+'。请继续检查正式 HTML 的截图与视觉验收。');}catch(e){status('保存失败：'+e.message,true)}finally{$('save').disabled=false}};
-$('download').onclick=()=>{const u=URL.createObjectURL(new Blob([JSON.stringify(spec,null,2)+'\n'],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='candidate.draft.json';a.click();URL.revokeObjectURL(u)};
-$('original').onclick=()=>$('frame').src=base+'/original?at='+Date.now();load();
+$('apply').onclick=()=>{try{const next=JSON.parse($('jsonbox').value);if(next.diagram_type!==spec.diagram_type||next.schema_version!==spec.schema_version||next.meta?.output!==spec.meta.output||JSON.stringify(next.meta?.repository)!==JSON.stringify(spec.meta.repository))throw Error('不允许更改图类型、版本、输出路径和仓库');spec=next;rawDirty=false;rerender();status('已应用 JSON 修改，未保存。');}catch(e){status('JSON 不合法：'+e.message,true)}};
+$('format').onclick=()=>{try{$('jsonbox').value=JSON.stringify(JSON.parse($('jsonbox').value),null,2);$('jsonbox').dispatchEvent(new Event('input'))}catch(e){status(e.message,true)}};
+$('preview').onclick=async()=>{if(!requireApplied())return;try{$('preview').disabled=true;status('正在使用 Archify 正式渲染器创建预览…');const r=await post('/api/preview',{candidate:spec});if(!r.ok)throw Error(r.message);$('frame').src=base+'/preview?at='+Date.now();status('预览完成；当前图尚未通过完整交付验证。');}catch(e){status('预览失败：'+e.message,true)}finally{updateDraftControls()}};
+$('save').onclick=async()=>{if(!requireApplied())return;try{$('save').disabled=true;status('正在验证与交付正式 HTML…');const r=await post('/api/save',{candidate:spec,expectedHash});if(!r.ok){if(r.expectedHash)expectedHash=r.expectedHash;throw Error(r.message)}expectedHash=r.expectedHash;status('保存成功：'+r.message+'。请继续检查正式 HTML 的截图与视觉验收。');}catch(e){status('保存失败：'+e.message,true)}finally{updateDraftControls()}};
+$('download').onclick=()=>{const u=URL.createObjectURL(new Blob([(rawDirty?$('jsonbox').value:JSON.stringify(spec,null,2))+'\n'],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='candidate.draft.json';a.click();URL.revokeObjectURL(u)};
+$('original').onclick=()=>$('frame').src=base+'/original?at='+Date.now();$('reload').onclick=load;load();
 </script></body></html>

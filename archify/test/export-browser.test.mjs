@@ -471,7 +471,7 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
       window.alphaBlob=blob;
       const url=URL.createObjectURL(blob),video=document.createElement('video');video.muted=true;video.src=url;
       await new Promise((resolve,reject)=>{video.onloadeddata=resolve;video.onerror=()=>reject(new Error('Alpha WebM decode failed'));});
-      await video.play();await new Promise(resolve=>video.requestVideoFrameCallback(resolve));video.pause();
+      const painted=new Promise(resolve=>video.requestVideoFrameCallback(resolve));await video.play();await painted;video.pause();
       const canvas=document.createElement('canvas');canvas.width=video.videoWidth;canvas.height=video.videoHeight;
       const ctx=canvas.getContext('2d');ctx.drawImage(video,0,0);
       const first=ctx.getImageData(0,0,canvas.width,canvas.height).data;
@@ -596,10 +596,57 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
 
   await t.test('recording succeeds with real encoding and releases tracks and the background URL', async () => {
     await load();assert.equal(await run('Archify.motion.canRecord()'),true);
-    const result = await run(`(async()=>{const blob=await Archify.motion.recordWebm({duration:500,fps:10});window.recordedBlob=blob;const url=URL.createObjectURL(blob),video=document.createElement('video');video.muted=true;video.src=url;await new Promise((resolve,reject)=>{video.onloadeddata=resolve;video.onerror=()=>reject(new Error('WebM decode failed'));});const dimensions=[video.videoWidth,video.videoHeight];await video.play();await new Promise(resolve=>video.requestVideoFrameCallback(resolve));video.pause();video.removeAttribute('src');video.load();URL.revokeObjectURL(url);return {type:blob.type,nonempty:blob.size>0,dimensions,cancelled:exportCancelled.length>0};})()`);
+    const result = await run(`(async()=>{const blob=await Archify.motion.recordWebm({duration:500,fps:10});window.recordedBlob=blob;const url=URL.createObjectURL(blob),video=document.createElement('video');video.muted=true;video.src=url;await new Promise((resolve,reject)=>{video.onloadeddata=resolve;video.onerror=()=>reject(new Error('WebM decode failed'));});const dimensions=[video.videoWidth,video.videoHeight];const painted=new Promise(resolve=>video.requestVideoFrameCallback(resolve));await video.play();await painted;video.pause();video.removeAttribute('src');video.load();URL.revokeObjectURL(url);return {type:blob.type,nonempty:blob.size>0,dimensions,cancelled:exportCancelled.length>0};})()`);
     assert.match(result.type,/^video\/webm/);assert.equal(result.nonempty,true);assert.equal(result.cancelled,true);assert.ok(result.dimensions.every(n=>n>0&&n%2===0));
     const state = await record('webm-real');assert.ok(state.tracks.length>0);assert.ok(state.tracks.every(s=>s==='ended'));assert.ok(state.urls.every(u=>u.revoked));assert.deepEqual(state.console,[]);
     if(evidence){const bytes=await run(`(async()=>Array.from(new Uint8Array(await recordedBlob.arrayBuffer())))()`);fs.writeFileSync(path.join(evidence,'recording.webm'),Buffer.from(bytes));}
+  });
+
+  await t.test('all five renderer families animate anonymous geometry without trace or node pulses', async () => {
+    const original=fs.readFileSync(file);
+    try {for(const [mode,fixture]of [['architecture','web-app.architecture.json'],['workflow','agent-tool-call.workflow.json'],['sequence','cache-miss-request.sequence.json'],['dataflow','product-analytics.dataflow.json'],['lifecycle','agent-run.lifecycle.json']]){
+      execFileSync(process.execPath,[path.join(skillRoot,`renderers/${mode}/render-${mode}.mjs`),path.join(skillRoot,'examples',fixture),file]);
+      await load();
+    const result=await run(`(async()=>{
+      document.querySelectorAll('[data-edge-id]').forEach(el=>el.removeAttribute('data-edge-id'));
+      document.querySelectorAll('[data-node-id]').forEach(el=>el.removeAttribute('data-node-id'));
+      document.querySelectorAll('[data-animate]').forEach(el=>el.removeAttribute('data-animate'));
+      const blob=await Archify.motion.recordGif({duration:1000,fps:12,scale:1});window.anonymousGif=blob;
+      const decoder=new ImageDecoder({data:await blob.arrayBuffer(),type:'image/gif'});await decoder.tracks.ready;
+      const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');let first,changed=0;
+      for(let i=0;i<decoder.tracks.selectedTrack.frameCount;i++){
+        const {image}=await decoder.decode({frameIndex:i});canvas.width=image.displayWidth;canvas.height=image.displayHeight;ctx.drawImage(image,0,0);
+        const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+        if(!first)first=new Uint8ClampedArray(pixels);else for(let j=0;j<pixels.length;j+=4)if(pixels[j]!==first[j]||pixels[j+1]!==first[j+1]||pixels[j+2]!==first[j+2])changed++;
+        image.close();
+      }
+      const count=decoder.tracks.selectedTrack.frameCount;decoder.close();return {changed,count,width:canvas.width,height:canvas.height};
+    })()`);
+    assert.equal(result.count,12);assert.ok(result.changed>10,JSON.stringify(result));
+    records.push({name:mode+'-anonymous-edge-gif',...result});
+    if(evidence){const bytes=await run(`(async()=>Array.from(new Uint8Array(await anonymousGif.arrayBuffer())))()`);fs.writeFileSync(path.join(evidence,mode+'-anonymous-edges.gif'),Buffer.from(bytes));}
+    }}finally{fs.writeFileSync(file,original);}
+  });
+
+  await t.test('anonymous edges animate in decoded GIF frames without node pulses', async () => {
+    await load();
+    const result=await run(`(async()=>{
+      document.querySelectorAll('[data-edge-id]').forEach(el=>el.removeAttribute('data-edge-id'));
+      document.querySelectorAll('[data-node-id]').forEach(el=>el.removeAttribute('data-node-id'));
+      const blob=await Archify.motion.recordGif({duration:1000,fps:12,scale:1});window.anonymousGif=blob;
+      const decoder=new ImageDecoder({data:await blob.arrayBuffer(),type:'image/gif'});await decoder.tracks.ready;
+      const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');let first,changed=0;
+      for(let i=0;i<decoder.tracks.selectedTrack.frameCount;i++){
+        const {image}=await decoder.decode({frameIndex:i});canvas.width=image.displayWidth;canvas.height=image.displayHeight;ctx.drawImage(image,0,0);
+        const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+        if(!first)first=new Uint8ClampedArray(pixels);else for(let j=0;j<pixels.length;j+=4)if(pixels[j]!==first[j]||pixels[j+1]!==first[j+1]||pixels[j+2]!==first[j+2])changed++;
+        image.close();
+      }
+      const count=decoder.tracks.selectedTrack.frameCount;decoder.close();return {changed,count,width:canvas.width,height:canvas.height};
+    })()`);
+    assert.equal(result.count,12);assert.ok(result.changed>10,JSON.stringify(result));
+    records.push({name:'anonymous-edge-gif',...result});
+    if(evidence){const bytes=await run(`(async()=>Array.from(new Uint8Array(await anonymousGif.arrayBuffer())))()`);fs.writeFileSync(path.join(evidence,'anonymous-edges.gif'),Buffer.from(bytes));}
   });
 
   await t.test('menu recording writes its receipt and downloads the real default-duration WebM', async () => {
@@ -617,16 +664,21 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
   });
 
   await t.test('recording constructor/error/empty failures clean up and public run disables WebM', async () => {
-    for (const fault of ['constructor','error','empty']) {
+    for (const fault of ['constructor','error','empty','start','requestData','stop','silent-stop','draw','later-draw','capture']) {
       await load();
       await run(`window.MediaRecorder=class {
         static isTypeSupported(){return true;}
         constructor(){if(${JSON.stringify(fault)}==='constructor')throw new Error('recorder constructor');this.state='inactive';this.mimeType='video/webm';}
-        start(){this.state='recording';if(${JSON.stringify(fault)}==='error')setTimeout(()=>{this.state='inactive';this.onerror({error:new Error('recorder error')});},20);}
-        requestData(){} stop(){this.state='inactive';this.onstop();}
+        start(){if(${JSON.stringify(fault)}==='start')throw Error('recorder start');this.state='recording';if(${JSON.stringify(fault)}==='error')setTimeout(()=>{this.state='inactive';this.onerror({error:new Error('recorder error')});},20);}
+        requestData(){if(${JSON.stringify(fault)}==='requestData')throw Error('recorder requestData');} stop(){if(${JSON.stringify(fault)}==='stop')throw Error('recorder stop');this.state='inactive';if(${JSON.stringify(fault)}!=='silent-stop'&&this.onstop)this.onstop();}
       };`);
+      await run(`(()=>{const fault=${JSON.stringify(fault)};
+        if(fault==='capture')HTMLCanvasElement.prototype.captureStream=()=>{throw Error('capture failure')};
+        if(fault==='draw'||fault==='later-draw'){const native=CanvasRenderingContext2D.prototype.drawImage;let count=0;CanvasRenderingContext2D.prototype.drawImage=function(...args){if(++count>(fault==='draw'?0:1))throw Error('drawing failure');return native.apply(this,args)}}
+      })()`);
       assert.equal(await run('Archify.motion.recordWebm({duration:250,fps:10}).then(()=>false,()=>true)'),true);
-      const state=await record('webm-'+fault);assert.ok(state.urls.every(u=>u.revoked));assert.ok(state.tracks.length>0);assert.ok(state.tracks.every(s=>s==='ended'));
+      const state=await record('webm-'+fault);assert.ok(state.urls.every(u=>u.revoked));if(fault!=='capture')assert.ok(state.tracks.length>0);assert.ok(state.tracks.every(s=>s==='ended'));
+      const later=await record('webm-'+fault+'-settled');assert.deepEqual(later.errors,[]);
     }
     await load({extra:'&fault=unsupported'});
     await run(`Archify.exportMenu.run('webm')`);
