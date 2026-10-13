@@ -130,8 +130,13 @@ selected export scale for native-resolution rendering. The scale selector offers
 Default / 1× / 3× / 5× / 7× / 10× for images, clipboard, GIF and WebM. Explicit scales
 use source SVG content units (raster figures include scaled titles/margins);
 Default keeps existing raster 4× and motion 1280px-fit behavior. `options.scale`
-also works through the export/motion APIs. Explicit exports exceeding 16 Mi pixels
-or 8192px on either side fail clearly without quietly reducing resolution.
+also works through the export/motion APIs. Explicit still images (PNG/JPEG/WebP
+and PNG clipboard) allow up to 256 Mi pixels and 32767px per side, including
+titles/margins, so ordinary diagrams can export at native 10× resolution.
+Automatic raster sizing retains its conservative 16 Mi pixel budget. Explicit
+motion exports retain 16 Mi pixels / 8192px per side. Exports beyond their budget
+fail clearly without quietly reducing resolution; browser allocation or encoding
+failures also remain explicit. Still-image canvases are released after encoding.
 SVG stays vector; semantic share cards retain their existing 1200×630 contract.
 GIF reuses the
 WebM relationship-trace scene even for static diagrams. It uses an adaptive

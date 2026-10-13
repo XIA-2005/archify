@@ -6375,6 +6375,11 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       // pixel count fits under this cap; a figure too large even at 1x is
       // downscaled to fit rather than allocating an oversized canvas.
       var MAX_CANVAS_PIXELS = 16 * 1024 * 1024;
+      // Explicit still-image exports are opt-in high-resolution allocations.
+      // Do not apply the conservative automatic/mobile or motion-frame budget
+      // to them. Browser allocation/encoding failures still propagate normally.
+      var MAX_STILL_PIXELS = 256 * 1024 * 1024;
+      var MAX_STILL_SIDE = 32767;
 
       function pickSafeScale(vbW, vbH) {
         for (var s = RASTER_SCALE; s >= 1; s--) {
@@ -6383,14 +6388,20 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         return Math.sqrt(MAX_CANVAS_PIXELS / (vbW * vbH)) * 0.999;
       }
 
-      function exportScale(options, fallback, width, height) {
+      function exportScale(options, fallback, width, height, stillImage) {
         if (!options || options.scale == null || options.scale === 'auto') return fallback;
         var scale = Number(options.scale);
         if ([1, 3, 5, 7, 10].indexOf(scale) === -1) {
           var invalid = exportError('viewer.export.error.scale'); invalid.archifyExportSize = true; throw invalid;
         }
-        if (Math.ceil(width * scale) * Math.ceil(height * scale) > MAX_CANVAS_PIXELS ||
-            width * scale > 8192 || height * scale > 8192) {
+        var pixelLimit = stillImage ? MAX_STILL_PIXELS : MAX_CANVAS_PIXELS;
+        var sideLimit = stillImage ? MAX_STILL_SIDE : 8192;
+        var targetWidth = Math.ceil(width * scale);
+        var targetHeight = Math.ceil(height * scale);
+        if (!Number.isFinite(targetWidth) || !Number.isFinite(targetHeight) ||
+            targetWidth <= 0 || targetHeight <= 0 ||
+            targetWidth * targetHeight > pixelLimit ||
+            targetWidth > sideLimit || targetHeight > sideLimit) {
           var oversized = exportError('viewer.export.error.scaleTooLarge'); oversized.archifyExportSize = true; throw oversized;
         }
         return scale;
@@ -6508,7 +6519,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         var vb = svg.viewBox.baseVal;
         var layout = figureLayout(vb);
         var scale;
-        try { scale = exportScale(options, pickSafeScale(layout.width, layout.height), layout.width, layout.height); }
+        try { scale = exportScale(options, pickSafeScale(layout.width, layout.height), layout.width, layout.height, true); }
         catch (error) { return Promise.reject(error); }
         var data = serializeSvg(scale, { figure: true, transparentBackground: transparentBackground });
         var svgBlob = new Blob([data.svgString], { type: 'image/svg+xml;charset=utf-8' });
@@ -6533,6 +6544,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
                          format === 'webp' ? 'image/webp' : 'image/png';
               var quality = format === 'png' ? undefined : 0.95;
               canvas.toBlob(function (blob) {
+                canvas.width = canvas.height = 0;
                 if (!blob) reject(exportError('viewer.export.error.toBlobNull', { label: format }));
                 else resolve(blob);
               }, mime, quality);

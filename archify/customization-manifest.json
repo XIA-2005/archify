@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "assets/template.html",
-      "sha256": "7e5a3c0b0cf575f7216dceb01e3c454be8a20a3707a157552019a30c2225805d"
+      "sha256": "a6d5c13114aa25267a83c5d2264855eb1045a9425c09b0e5107e50bf2ae0161a"
     },
     {
       "path": "delta/architecture-delta.mjs",
@@ -182,11 +182,11 @@
     },
     {
       "path": "examples/dataflow-product-analytics.html",
-      "sha256": "cadbcbcf5279223a3b0c69cf331bfa2d6abae8a4bfedd42c178e86273dac070e"
+      "sha256": "94fb8699f5fdd5180725cf54dd1897d005f03d38ef511503aa47d6165fa45a41"
     },
     {
       "path": "examples/lifecycle-agent-run.html",
-      "sha256": "c6514150dfd51943e3e55710b84bcbfd8c7f686b69a0cdfc459a7439011ec42c"
+      "sha256": "2f0fdab1e38b7ae31e8ef9e83960b1a7dfdca8673ed24f2e7297e25a2696c3bd"
     },
     {
       "path": "examples/locales/de.json",
@@ -222,15 +222,15 @@
     },
     {
       "path": "examples/sequence-cache-miss-request.html",
-      "sha256": "6e326b3115431efefddeffb529233acecdec42eadeb307668e07ac47ce4d3b10"
+      "sha256": "b3727df867965f1044938c49c469e45b73deaa4d9f31351a64f6e798d100e872"
     },
     {
       "path": "examples/web-app-rendered.html",
-      "sha256": "ba5257330ba71a8edcb3f6235c22ffbf6d4492421105ddfd2fbe7e49bc7cfb48"
+      "sha256": "b330a04b247843556750e66919f43a718f41538137150848ef585809d815a5ba"
     },
     {
       "path": "examples/workflow-agent-tool-call-rendered.html",
-      "sha256": "ae47a3255adde9484ad31be4f234a34853c9cf3035696c1c1946e1baf255b662"
+      "sha256": "6873df5b47814d006e4587130cf8284705bf4f652a761801bf47dbe747fc5743"
     },
     {
       "path": "LOCAL_CUSTOMIZATION.md",
@@ -326,11 +326,11 @@
     },
     {
       "path": "SKILL.md",
-      "sha256": "f4ccbbc76430d0f376089d11c58f2f661c67d4c13bf8010ec5528d11599f0f5b"
+      "sha256": "39d83ee9e0efc525a549ac6dd41bf592cd290893da28be810d9ce470518b21e6"
     },
     {
       "path": "test/export-browser.test.mjs",
-      "sha256": "38038a92e7e780f0ed1c149e30d2ec00b2d06c140b942a18fe6b469e2b487148"
+      "sha256": "0864411017c587e95dd555d36a48c9c3a8473b67d29e3dfc3cfb0c92e616af74"
     },
     {
       "path": "test/export-cleanup-browser.test.mjs",

@@ -464,6 +464,36 @@ test('Export preserves menu, clipboard, semantic cards and recording lifecycles'
     if(evidence){const bytes=await run(`scaledGif.arrayBuffer().then(b=>Array.from(new Uint8Array(b)))`);fs.writeFileSync(path.join(evidence,'scaled-3x.gif'),Buffer.from(bytes));}
   });
 
+  await t.test('10x still images exceed the legacy pixel and side caps at native resolution', async () => {
+    await load();
+    const unit = await run(`(()=>{const v=document.querySelector('.diagram-container svg').viewBox.baseVal;const sub=(document.querySelector('.header .subtitle')||{}).textContent;return [v.width+104,v.height+104+(document.querySelector('.header h1')?32+(sub&&sub.trim()?24:0)+18:0)];})()`);
+    assert.ok(unit[0]*10 > 8192 || unit[1]*10 > 8192);
+    assert.ok(unit[0]*unit[1]*100 > 16*1024*1024);
+    for (const format of ['png','jpeg','webp']) {
+      const before = await run('exportDownloads.length');
+      await run(`Archify.exportMenu.run('${format}',{scale:10,transparentBackground:true})`);
+      assert.equal(await run('exportDownloads.length'),before+1, `${format}: ${await run('exportAlerts.at(-1)')}`);
+      const result = await run(`(async()=>{const blob=exportDownloads.at(-1).blob;const image=await createImageBitmap(blob);const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=Math.round(image.height*1200/image.width);const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;let painted=0,transparent=0;for(let i=3;i<pixels.length;i+=4){if(pixels[i])painted++;else transparent++;}const result={width:image.width,height:image.height,type:blob.type,painted,transparent,preview:canvas.toDataURL('image/png')};image.close();exportDownloads.length=0;exportUrls.clear();return result;})()`);
+      assert.deepEqual([result.width,result.height],unit.map(n=>n*10));
+      assert.equal(result.type, `image/${format}`);
+      assert.ok(result.painted > 100);
+      if(format==='jpeg') assert.equal(result.transparent,0);
+      else assert.ok(result.transparent > 100);
+      if(evidence) fs.writeFileSync(path.join(evidence,`native-10x-${format}.png`),Buffer.from(result.preview.split(',')[1],'base64'));
+    }
+    for (const bounds of ['0 0 3300 100','0 0 1700 1700']) {
+      await run(`document.querySelector('.diagram-container svg').setAttribute('viewBox','${bounds}')`);
+      for (const format of ['png','jpeg','webp']) {
+        await run(`Archify.exportMenu.run('${format}',{scale:10})`);
+        assert.equal(await run("document.documentElement.getAttribute('data-last-export-error-format')"),format);
+        assert.match(await run('exportAlerts.at(-1)'),/lower scale/);
+      }
+    }
+    // Motion retains its smaller per-frame budget.
+    await run(`document.querySelector('.diagram-container svg').setAttribute('viewBox','0 0 900 300');Archify.exportMenu.run('gif',{scale:10})`);
+    assert.equal(await run("document.documentElement.getAttribute('data-last-export-error-format')"),'gif');
+  });
+
   await t.test('transparent WebM decodes actual alpha and motion with bounded encoder cleanup', async () => {
     await load();
     const result = await run(`(async()=>{
